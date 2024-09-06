@@ -1,8 +1,8 @@
 function newdata = eiCalc_smoothTimeLagAverages( ...
-  olddata, datafields, timesmooth_ms, lagsmooth_ms, method );
+  olddata, datafields, timesmooth_ms, lagsmooth_ms, method )
 
 % function newdata = eiCalc_smoothTimeLagAverages( ...
-%   olddata, datafields, timesmooth_ms, lagsmooth_ms, method );
+%   olddata, datafields, timesmooth_ms, lagsmooth_ms, method )
 %
 % This function smooths time-and-lag analysis data and optionally re-bins it
 % using coarser bins. This operates on data that has already been averaged
