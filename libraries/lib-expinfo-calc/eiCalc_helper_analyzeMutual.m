@@ -1,13 +1,13 @@
-function result = euInfo_helper_analyzeTransfer( ...
+function result = eiCalc_helper_analyzeMutual( ...
   wavedest, wavesrc, samprate, delaylist, params )
 
-% function result = euInfo_helper_analyzeTransfer( ...
+% function result = eiCalc_helper_analyzeMutual( ...
 %   wavedest, wavesrc, samprate, delaylist, params )
 %
 % This is an analysis function, per TIMEWINLAGFUNCS.txt.
 %
-% This calculates transfer entropy between the supplied signals. If multiple
-% trials are supplied, the trials are concatenated.
+% This calculates time-lagged mutual information between the supplied
+% signals. If multiple trials are supplied, the trials are concatenated.
 %
 % "wavedest" and "wavesrc" are expected to contain data that's either
 %   continuous real-valued (such as ephys data) or discrete-valued (such as
@@ -27,7 +27,7 @@ function result = euInfo_helper_analyzeTransfer( ...
 % Check for the empty case (querying result fields).
 
 if isempty(wavedest) || isempty(wavesrc) || isempty(delaylist)
-  result = struct( 'transfer', [] );
+  result = struct( 'mutual', [] );
   return;
 end
 
@@ -69,21 +69,21 @@ end
 scratchdata = { wavedest, wavesrc };
 
 
-% Calculate transfer entropy.
+% Calculate time-lagged mutual information.
 
 if params.want_parallel
   if params.want_extrap
-    tevals = cEn_calcTransferEntropy_MT( scratchdata, delaylist, binlist, ...
+    mvals = cEn_calcLaggedMutualInfo_MT( scratchdata, delaylist, binlist, ...
       params.extrap_config );
   else
-    tevals = cEn_calcTransferEntropy_MT( scratchdata, delaylist, binlist );
+    mvals = cEn_calcLaggedMutualInfo_MT( scratchdata, delaylist, binlist );
   end
 else
   if params.want_extrap
-    tevals = cEn_calcTransferEntropy( scratchdata, delaylist, binlist, ...
+    mvals = cEn_calcLaggedMutualInfo( scratchdata, delaylist, binlist, ...
       params.extrap_config );
   else
-    tevals = cEn_calcTransferEntropy( scratchdata, delaylist, binlist );
+    mvals = cEn_calcLaggedMutualInfo( scratchdata, delaylist, binlist );
   end
 end
 
@@ -91,7 +91,7 @@ end
 % Store this in an appropriately-named field.
 
 result = struct();
-result.transfer = tevals;
+result.mutual = mvals;
 
 
 % Done.

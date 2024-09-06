@@ -1,8 +1,8 @@
 function delaylist_samps = ...
-  euInfo_helper_getDelaySamps( samprate, delay_range_ms, delay_step_ms )
+  eiCalc_helper_getDelaySamps( samprate, delay_range_ms, delay_step_ms )
 
 % function delaylist_samps = ...
-%   euInfo_helper_getDelaySamps( samprate, delay_range_ms, delay_step_ms )
+%   eiCalc_helper_getDelaySamps( samprate, delay_range_ms, delay_step_ms )
 %
 % This converts a time lag range and stride (in milliseconds) into delay
 % offsets (in samples).

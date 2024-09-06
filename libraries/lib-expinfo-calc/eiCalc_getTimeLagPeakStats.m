@@ -1,18 +1,18 @@
 function [ ampmean ampdev lagmean lagdev ] = ...
-  euInfo_getTimeLagPeakStats( timelagdata, datafield, ...
+  eiCalc_getTimeLagPeakStats( timelagdata, datafield, ...
     timerange_ms, timesmooth_ms, magthresh, magacceptrange, method )
 
 % function [ ampmean ampdev lagmean lagdev ] = ...
-%   euInfo_getTimeLagPeakStats( timelagdata, datafield, ...
+%   eiCalc_getTimeLagPeakStats( timelagdata, datafield, ...
 %     timerange_ms, timesmooth_ms, magthresh, magacceptrange, method )
 %
 % This analyzes a time-and-lag analysis dataset, extracting the mean and
 % deviation of the data peak's amplitude and time lag by black magic,
 % within the analysis window time range specified.
 %
-% This calls euInfo_collapseTimeLagAverages() to get the mean and deviation
+% This calls eiCalc_collapseTimeLagAverages() to get the mean and deviation
 % of the amplitude, finds the peak closest to 0 lag, finds the extent of
-% that peak (via thresholding), and then calls euInfo_findTimeLagPeaks() to
+% that peak (via thresholding), and then calls eiCalc_findTimeLagPeaks() to
 % get peak amplitude and lag as a function of time. This is masked to reject
 % peaks too far from the average peak's amplitude and lag extent, and then
 % statistics are extracted.
@@ -41,7 +41,7 @@ function [ ampmean ampdev lagmean lagdev ] = ...
 %   range for time-varying peak detection. A typical range would be
 %   [ 0.5 inf ].
 % "method" is an optional argument. If present, it should be 'largest' or
-%   'weighted', specifying an euInfo_findTimeLagPeaks search method. The
+%   'weighted', specifying an eiCalc_findTimeLagPeaks search method. The
 %   default is 'largest'.
 %
 % "ampmean" is a matrix indexed by (destidx,srcidx) containing the mean
@@ -88,7 +88,7 @@ lagdev = NaN(destcount, srccount);
 % Sanity-check the requested field, and extract it.
 
 if ~isfield( timelagdata, datafield )
-  disp([ '### [euInfo_getTimeLagPeakStats]  Can''t find field "' ...
+  disp([ '### [eiCalc_getTimeLagPeakStats]  Can''t find field "' ...
     datafield '".' ]);
   return;
 end
@@ -99,7 +99,7 @@ avgdata = timelagdata.(datafield);
 %
 % First pass: Do peak detection on the average (not time-varying).
 
-[ avgvstime avgvslag ] = euInfo_collapseTimeLagAverages( ...
+[ avgvstime avgvslag ] = eiCalc_collapseTimeLagAverages( ...
   timelagdata, datafield, { timerange_ms }, [] );
 
 guessamp = NaN(destcount, srccount);
@@ -183,7 +183,7 @@ for destidx = 1:destcount
 
     thispairdata.(datafield) = avgdata(destidx,srcidx,:,:);
 
-    peakdata = euInfo_findTimeLagPeaks( ...
+    peakdata = eiCalc_findTimeLagPeaks( ...
       thispairdata, datafield, timesmooth_ms, lagrange, method );
 
 
