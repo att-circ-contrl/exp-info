@@ -17,7 +17,9 @@ fullname = which('addPathsExpInfo');
 % Add the new paths.
 % (This checks for duplicates, so we don't have to.)
 
+addpath([ thisdir filesep 'lib-expinfo-aux' ]);
 addpath([ thisdir filesep 'lib-expinfo-calc' ]);
+addpath([ thisdir filesep 'lib-expinfo-plot' ]);
 
 
 % Done.
