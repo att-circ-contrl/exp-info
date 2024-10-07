@@ -6,7 +6,7 @@ function validmask = eiAux_getPairValidMask( datamatrix, zerothresh )
 % and produces a two-dimensional mask indexed by (dest, src) that's true for
 % entries with nonzero finite magnitude and false otherwise.
 %
-% "datamatrix" is a matrix indexed by (destchan, srcchan, winidix, lagidx).
+% "datamatrix" is a matrix indexed by (destchan, srcchan, winidx, lagidx).
 %   This is an analysis result field, per TIMEWINLAGDATA.txt.
 % "zerothresh" is the magnitude below which elements are considered to be
 %   zero. If omitted, a default value is used.

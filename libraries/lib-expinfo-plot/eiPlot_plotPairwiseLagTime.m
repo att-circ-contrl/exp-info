@@ -26,53 +26,10 @@ function eiPlot_plotPairwiseLagTime( infodata, infofield, ...
 % No return value.
 
 
+% Get plotting-related metadata.
 
-%
-% Get channel pair metadata.
-
-
-destchans = infodata.destchans;
-srcchans = infodata.srcchans;
-
-destcount = length(destchans);
-srccount = length(srcchans);
-
-[ destlabels desttitles ] = euUtil_makeSafeStringArray( destchans );
-[ srclabels srctitles ] = euUtil_makeSafeStringArray( srcchans );
-
-
-% Consider each pair only once and mask self-comparisons.
-pairmask = nlUtil_getPairMask( destchans, srcchans );
-
-% Avoid plotting fully-squashed cases.
-pairmask = pairmask & eiAux_getPairValidMask( infodata.(infofield) );
-
-% Select only the requested channels.
-pairmask = pairmask & ...
-  eiAux_getDesiredPairMask( infodata, destswanted, srcswanted );
-
-
-
-%
-% Get time and lag metadata.
-
-delaylist_ms = infodata.delaylist_ms;
-timelist_ms = infodata.windowlist_ms;
-
-delaycount = length(delaylist_ms);
-timecount = length(timelist_ms);
-
-[ delaylabels delaytitles ] = ...
-  nlUtil_makeIntegerTimeLabels( delaylist_ms, 'ms' );
-[ timelabels timetitles ] = ...
-  nlUtil_makeIntegerTimeLabels( timelist_ms, 'ms' );
-
-
-
-%
-% Get content metadata.
-
-zrange = eiPlot_getZRange( infodata, infofield, ztype );
+pm = eiPlot_getChanTimeLagMetadata( ...
+  infodata, infofield, destswanted, srcswanted, ztype );
 
 
 
@@ -82,19 +39,19 @@ zrange = eiPlot_getZRange( infodata, infofield, ztype );
 thisfig = figure();
 figure(thisfig);
 
-for destidx = 1:destcount
-  for srcidx = 1:srccount
-    if pairmask(destidx,srcidx)
+for destidx = 1:pm.destcount
+  for srcidx = 1:pm.srccount
+    if pm.pairmask(destidx,srcidx)
 
       thisslice = infodata.(infofield)(destidx,srcidx,:,:);
-      thisslice = reshape( thisslice, timecount, delaycount );
+      thisslice = reshape( thisslice, pm.timecount, pm.delaycount );
 
       % Remember that we want (y,x) for the plot.
       thisslice = transpose(thisslice);
 
       % Tolerate gaps in the time series.
       [ thisslice, thistimeseries, thislagseries ] = ...
-        nlProc_padHeatmapGaps( thisslice, timelist_ms, delaylist_ms );
+        nlProc_padHeatmapGaps( thisslice, pm.timelist_ms, pm.delaylist_ms );
 
 
       % Generate this plot.
@@ -108,9 +65,9 @@ for destidx = 1:destcount
         'linear', 'linear', 'linear', ...
         'Time (ms)', 'Delay (ms)', ...
         [ titleprefix ' - ' ...
-          srctitles{srcidx} ' to ' desttitles{destidx} ] );
+          pm.srctitles{srcidx} ' to ' pm.desttitles{destidx} ] );
 
-      clim(zrange);
+      clim(pm.zrange);
 
       thiscol = colorbar;
       if ~isempty(colunits)
@@ -118,7 +75,7 @@ for destidx = 1:destcount
       end
 
       saveas( thisfig, sprintf( outfilepat, ...
-        srclabels{srcidx}, destlabels{destidx} ) );
+        pm.srclabels{srcidx}, pm.destlabels{destidx} ) );
 
     end
   end
