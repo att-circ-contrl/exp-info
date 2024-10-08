@@ -27,8 +27,13 @@ on path, call the `addPathsExpInfo` function to add sub-folders.
 
 The following subdirectories contain library code:
 
+* `lib-expinfo-aux` --
+Additional functions that don't fit into any of the other categories.
 * `lib-expinfo-calc` --
 Calculation of various information measures. Requires the entropy library.
+* `lib-expinfo-plot` --
+Plotting functions for script development and testing. These plots are not
+publication-quality.
 
 
 ## Sample Code

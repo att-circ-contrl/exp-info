@@ -31,7 +31,7 @@ function peakdata = eiCalc_findTimeLagPeaks( ...
 %   specified starting point, or 'weighted' to find the highest-magnitude
 %   peak in range after weighting by a roll-off window.
 %
-% "peakdata" is a structure with the following fields:
+% "peakdata" is a struct with the following fields, per TIMEWINLAGPEAKS.txt:
 %   "destchans" is a cell array with FT channel names for the putative
 %     destination channels.
 %   "srcchans" is a cell array with FT channel names for the putative source

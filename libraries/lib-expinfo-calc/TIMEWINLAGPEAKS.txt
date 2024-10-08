@@ -1,0 +1,19 @@
+A peak detection structure for a time-and-lag analysis has the following
+fields:
+
+
+"destchans" is a cell array with FT channel names for the set of putative
+  destination channels that were compared.
+"srcchans" is a cell array with FT channel names for the set of putative
+  source channels that were compared.
+
+"windowlist_ms" is a vector containing timestamps in millseconds specifying
+  where the middle of each analysis time window was.
+
+"peaklags" is a matrix indexed by (destchan, srcchan, winidx) containing
+  the lag time (in milliseconds) of the peak.
+"peakamps" is a matrix indexed by (destchan, srcchan, winidx) containing
+  the (signed) data value at the peak location.
+
+
+(This is the end of the file.)
