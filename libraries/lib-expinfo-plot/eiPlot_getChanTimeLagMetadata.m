@@ -43,6 +43,8 @@ function plotmeta = eiPlot_getChanTimeLagMetadata( ...
 %   "timelabels" is a cell array with filename-safe time window locations.
 %   "timetitles" is a cell array with plot-safe time window locations.
 %
+%   "timestep_ms" is the median time increment in "timelist_ms".
+%
 %   "zrange" is the range of pairwise information values in the data.
 
 
@@ -99,6 +101,9 @@ plotmeta.timecount = length(timelist_ms);
   nlUtil_makeIntegerTimeLabels( delaylist_ms, 'ms' );
 [ plotmeta.timelabels plotmeta.timetitles ] = ...
   nlUtil_makeIntegerTimeLabels( timelist_ms, 'ms' );
+
+% NOTE - Blithely assuming mostly-uniform spacing.
+plotmeta.timestep_ms = median(diff(sort( timelist_ms )));
 
 
 
