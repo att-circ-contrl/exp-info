@@ -71,19 +71,23 @@ scratchdata = { wavedest, wavesrc };
 
 % Calculate time-lagged mutual information.
 
+replicates = 0;
+
 if params.want_parallel
   if params.want_extrap
-    mvals = cEn_calcLaggedMutualInfo_MT( scratchdata, delaylist, binlist, ...
-      params.extrap_config );
+    [ milist mivars ] = cEn_calcLaggedMutualInfo_MT( ...
+      scratchdata, delaylist, binlist, replicates, params.extrap_config );
   else
-    mvals = cEn_calcLaggedMutualInfo_MT( scratchdata, delaylist, binlist );
+    [ milist mivars ] = cEn_calcLaggedMutualInfo_MT( ...
+      scratchdata, delaylist, binlist, replicates );
   end
 else
   if params.want_extrap
-    mvals = cEn_calcLaggedMutualInfo( scratchdata, delaylist, binlist, ...
-      params.extrap_config );
+    [ milist mivars ] = cEn_calcLaggedMutualInfo( ...
+      scratchdata, delaylist, binlist, replicates, params.extrap_config );
   else
-    mvals = cEn_calcLaggedMutualInfo( scratchdata, delaylist, binlist );
+    [ milist mivars ] = cEn_calcLaggedMutualInfo( ...
+      scratchdata, delaylist, binlist, replicates );
   end
 end
 
@@ -91,7 +95,7 @@ end
 % Store this in an appropriately-named field.
 
 result = struct();
-result.mutual = mvals;
+result.mutual = milist;
 
 
 % Done.

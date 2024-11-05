@@ -10,7 +10,7 @@ function tedata = eiCalc_calcTransferEntropy( ...
 % Trip datasets within a series of time windows, optionally filtering by
 % phase. Multiple time lags are tested for each signal pair.
 %
-% This uses "Chris's Entropy Library", and can optionally perform
+% This uses the "Conditional Entropy Library", and can optionally perform
 % extrapolation to correct for small sample counts (per EXTRAPOLATION.txt
 % in that library).
 %

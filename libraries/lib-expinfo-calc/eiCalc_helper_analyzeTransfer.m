@@ -71,19 +71,23 @@ scratchdata = { wavedest, wavesrc };
 
 % Calculate transfer entropy.
 
+replicates = 0;
+
 if params.want_parallel
   if params.want_extrap
-    tevals = cEn_calcTransferEntropy_MT( scratchdata, delaylist, binlist, ...
-      params.extrap_config );
+    [ telist tevars ] = cEn_calcTransferEntropy_MT( ...
+      scratchdata, delaylist, binlist, replicates, params.extrap_config );
   else
-    tevals = cEn_calcTransferEntropy_MT( scratchdata, delaylist, binlist );
+    [ telist tevars ] = cEn_calcTransferEntropy_MT( ...
+      scratchdata, delaylist, binlist, replicates );
   end
 else
   if params.want_extrap
-    tevals = cEn_calcTransferEntropy( scratchdata, delaylist, binlist, ...
-      params.extrap_config );
+    [ telist tevars ] = cEn_calcTransferEntropy( ...
+      scratchdata, delaylist, binlist, replicates, params.extrap_config );
   else
-    tevals = cEn_calcTransferEntropy( scratchdata, delaylist, binlist );
+    [ telist tevars ] = cEn_calcTransferEntropy( ...
+      scratchdata, delaylist, binlist, replicates );
   end
 end
 
@@ -91,7 +95,7 @@ end
 % Store this in an appropriately-named field.
 
 result = struct();
-result.transfer = tevals;
+result.transfer = telist;
 
 
 % Done.
