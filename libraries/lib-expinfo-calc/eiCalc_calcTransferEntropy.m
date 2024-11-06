@@ -58,21 +58,10 @@ function tedata = eiCalc_calcTransferEntropy( ...
 %     values, but extrapolation may perturb values outside of that range.
 
 
-% Unpack and re-pack binning and extrapolation configuration.
-% Parallel processing switch goes into this structure too.
+% Repackage analysis configuratoin parameters.
 
-analysis_params = struct();
-
-analysis_params.discrete_dest = ischar(bin_count_dest);
-analysis_params.discrete_src = ischar(bin_count_src);
-
-analysis_params.bins_dest = bin_count_dest;
-analysis_params.bins_src = bin_count_src;
-
-analysis_params.want_extrap = isstruct(exparams);
-analysis_params.extrap_config = exparams;
-
-analysis_params.want_parallel = ismember('parallel', flags);
+analysis_params = ...
+  eiCalc_getParamsMutual( bin_count_dest, bin_count_src, flags, exparams );
 
 
 % Figure out if we're phase-filtering.
