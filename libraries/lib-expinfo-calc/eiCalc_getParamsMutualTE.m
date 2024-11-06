@@ -1,8 +1,8 @@
 function anparams = ...
-  eiCalc_getParamsMutual( bin_count_dest, bin_count_src, flags, exparams )
+  eiCalc_getParamsMutualTE( bin_count_dest, bin_count_src, flags, exparams )
 
 % function anparams = ...
-%   eiCalc_getParamsMutual( bin_count_dest, bin_count_src, flags, exparams )
+%   eiCalc_getParamsMutualTE( bin_count_dest, bin_count_src, flags, exparams )
 %
 % This creates a configuration structure suitable for use with the
 % helper_analyzeMutual() and helper_analyzeTransfer() analysis functions.
