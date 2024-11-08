@@ -10,7 +10,7 @@ function plotmeta = eiPlot_getChanTimeLagMetadata( ...
 % "infodata" is a data structure with pairwise shared information as a
 %   function of time and delay, per TIMEWINLAGDATA.txt.
 % "infofield" is the fieldname within "infodata" that contains data to be
-%   plotted (e.g. 'xcorrsingle', 'mutualavg', etc).
+%   plotted (e.g. 'xcorrcancatdata', 'mutualavgdata', etc).
 % "destswanted" is a cell array containing destination channels to consider,
 %   or {} to use all destination channels.
 % "srcswanted" is a cell array containing source channels to consider, or
@@ -29,9 +29,9 @@ function plotmeta = eiPlot_getChanTimeLagMetadata( ...
 %   "srclabels" is a cell array with filename-safe source labels.
 %   "srctitles" is a cell array with plot-safe source names.
 %
-%   "pairmask" is a boolean matrix indexed by (dest, src) that's true for
-%     channel pairs that aren't self-comparisons, aren't permutations, aren't
-%     squashed, and have desired sources and destinations.
+%   "pairmask" is a boolean matrix indexed by (dest, src, trial) that's true
+%     for channel pairs that aren't self-comparisons, aren't permutations,
+%     aren't squashed, and have desired sources and destinations.
 %
 %   "delaylist_ms" is a vector with information time lags.
 %   "delaycount" is the number of information time lags.
@@ -42,6 +42,11 @@ function plotmeta = eiPlot_getChanTimeLagMetadata( ...
 %   "timecount" is the number of time windows.
 %   "timelabels" is a cell array with filename-safe time window locations.
 %   "timetitles" is a cell array with plot-safe time window locations.
+%
+%   "trialnums" is a vector with trial numbers.
+%   "trialcount" is the number of trials.
+%   "triallabels" is a cell array with filename-safe trial numbers.
+%   "trialtitles" is a cell array with plot-safe trial numbers.
 %
 %   "timestep_ms" is the median time increment in "timelist_ms".
 %
@@ -104,6 +109,21 @@ plotmeta.timecount = length(timelist_ms);
 
 % NOTE - Blithely assuming mostly-uniform spacing.
 plotmeta.timestep_ms = median(diff(sort( timelist_ms )));
+
+
+
+%
+% Get trial number metadata.
+% Handle the case where the data is aggregated across trials.
+
+trialnums = infodata.trialnums;
+
+if size(infodata.(infofield)
+
+plotmeta.trialnums = trialnums;
+plotmeta.trialcount = length(trialnums);
+plotmeta.triallabels = nlUtil_sprintfCellArray( 'tr%04d', trialnums );
+plotmeta.trialtitles = nlUtil_sprintfCellArray( 'Tr %04d', trialnums );
 
 
 

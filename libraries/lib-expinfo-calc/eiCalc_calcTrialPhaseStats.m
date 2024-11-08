@@ -58,19 +58,33 @@ end
 function result = helper_analysisfunc( ...
   wavedest, wavesrc, samprate, delaylist, params )
 
-  % NOTE - We're supposed to return a vector with the same length as the
-  % delay list.
+  if isempty(wavedest) || isempty(wavesrc) || isempty(delaylist)
+    % This is the empty case (querying result fields).
+    result = struct( 'phasediff', [], 'plv', [] );
+  else
 
-  [ cmean cvar lindev ] = nlProc_calcCircularStats( wavedest - wavesrc );
-  plv = 1 - cvar;
+    % NOTE - We're supposed to return a vector with the same length as the
+    % delay list.
 
-  result = struct();
-  scratchvec = zeros(size(delaylist));
+    [ cmean cvar lindev ] = nlProc_calcCircularStats( wavedest - wavesrc );
+    plv = 1 - cvar;
 
-  scratchvec(:) = cmean;
-  result.phasediff = scratchvec;
-  scratchvec(:) = plv;
-  result.plv = scratchvec;
+    result = struct();
+    scratchvec = zeros(size( delaylist ));
+    countvec = ones(size( scratchvec ));
+    varvec = nan(size( scratchvec ));
+
+    scratchvec(:) = cmean;
+    result.phasediffdata = scratchvec;
+    result.phasediffcount = countvec;
+    result.phasediffvar = varvec;
+
+    scratchvec(:) = plv;
+    result.plvdata = scratchvec;
+    result.plvcount = countvec;
+    result.plvvar = varvec;
+
+  end
 
 end
 

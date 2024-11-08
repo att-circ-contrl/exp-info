@@ -68,7 +68,11 @@ rvals = rvals(resultmask);
 
 
 result = struct();
-result.xcorr = rvals;
+result.xcorrdata = rvals;
+% FIXME - We don't have a variance estimate.
+result.xcorrvar = nan(size( rvals ));
+% FIXME - Ignore trial trimming.
+result.xcorrcount = ones(size( rvals )) * trialcount * sampcount;
 
 
 % Done.

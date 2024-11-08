@@ -21,13 +21,10 @@ function [ ampmean ampdev lagmean lagdev ] = ...
 % Smoothing ahead of time might be necessary, and the target ranges will
 % probably need to be hand-tuned.
 %
-% NOTE - For now, this only works on data that has been averaged across
-% trials.
-%
-% "timelagdata" is a data structure per TIMEWINLAGDATA.txt. This should
-%   contain "avg", "var", and "count" fields for the desired data field.
-% "datafield" is a character vector with the name of the field being
-%   operated on.
+% "timelagdata" is a data structure per TIMEWINLAGDATA.txt.
+% "datafield" is a character vector with the prefix of the field being
+%   operated on. For prefix "FOO", the fields "FOOdata", "FOOcount",
+%   and "FOOvar" are expected to exist.
 % "timerange_ms" [ min max ] specifies a window time range in milliseconds
 %   to examine. A range of [] indicates all window times.
 % "timesmooth_ms" is the smoothing window size in milliseconds for smoothing
@@ -44,13 +41,13 @@ function [ ampmean ampdev lagmean lagdev ] = ...
 %   'weighted', specifying an eiCalc_findTimeLagPeaks search method. The
 %   default is 'largest'.
 %
-% "ampmean" is a matrix indexed by (destidx,srcidx) containing the mean
-%   (signed) peak data value within the specified window for each pair.
-% "ampdev" is a matrix indexed by (destidx,srcidx) containing the
+% "ampmean" is a matrix indexed by (destidx,srcidx,trialidx) containing the
+%   mean (signed) peak data value within the specified window for each pair.
+% "ampdev" is a matrix indexed by (destidx,srcidx,trialidx) containing the
 %   standard deviation of the peak data value for each pair.
-% "lagmean" is a matrix indexed by (destidx,srcidx) containing the mean
-%   time lag within the specified window for each pair.
-% "lagdev" is a matrix indexed by (destidx,srcidx) containing the
+% "lagmean" is a matrix indexed by (destidx,srcidx,trialidx) containing the
+%   mean time lag within the specified window for each pair.
+% "lagdev" is a matrix indexed by (destidx,srcidx,trialidx) containing the
 %   standard deviation of the time lag for each pair.
 
 
@@ -77,23 +74,42 @@ if ~exist('method', 'var')
 end
 
 
-% Initialize output.
+% Set placeholder return values in case we bail out.
+ampmean = [];
+ampdev = [];
+lagmean = [];
+lagdev = [];
 
-ampmean = NaN(destcount, srccount);
-ampdev = NaN(destcount, srccount);
-lagmean = NaN(destcount, srccount);
-lagdev = NaN(destcount, srccount);
 
+% Fetch the specified data field.
 
-% Sanity-check the requested field, and extract it.
-
-if ~isfield( timelagdata, datafield )
+if (~isfield( timelagdata, [ datafield 'data' ] )) ...
+  || (~isfield( timelagdata, [ datafield 'count' ] )) ...
+  || (~isfield( timelagdata, [ datafield 'var' ] )) ...
   disp([ '### [eiCalc_getTimeLagPeakStats]  Can''t find field "' ...
     datafield '".' ]);
   return;
 end
 
-avgdata = timelagdata.(datafield);
+datavals = timelagdata.([ datafield 'data' ]);
+countvals = timelagdata.([ datafield 'count' ]);
+varvals = timelagdata.([ datafield 'var' ]);
+
+
+% Get the actual trial count for this field; it might be a trial-spanning
+% average.
+
+trialcount = size(datavals,3);
+
+
+% Initialize output.
+
+scratch = NaN([ destcount srccount trialcount ]);
+
+ampmean = scratch;
+ampdev = scratch;
+lagmean = scratch;
+lagdev = scratch;
 
 
 %
@@ -102,57 +118,61 @@ avgdata = timelagdata.(datafield);
 [ avgvstime avgvslag ] = eiCalc_collapseTimeLagAverages( ...
   timelagdata, datafield, { timerange_ms }, [] );
 
-guessamp = NaN(destcount, srccount);
-guesslagmin = NaN(destcount, srccount);
-guesslagmax = NaN(destcount, srccount);
+scratch = NaN([ destcount srccount trialcount ]);
+
+guessamp = scratch;
+guesslagmin = scratch;
+guesslagmax = scratch;
 
 for destidx = 1:destcount
   for srcidx = 1:srccount
+    for tidx = 1:trialcount
 
-    thisdata = avgvslag.avg(destidx,srcidx,:);
-    thisdata = reshape(thisdata, size(laglist));
+      thisdata = avgvslag.avg(destidx,srcidx,tidx,:);
+      thisdata = reshape(thisdata, size(laglist));
 
-    % Find the peak in average magnitude vs lag.
-    bestidx = nlProc_findPeakNearest( thisdata, laglist, 0 );
+      % Find the peak in average magnitude vs lag.
+      bestidx = nlProc_findPeakNearest( thisdata, laglist, 0 );
 
-    if ~isnan(bestidx)
-      % Threshold around the peak to get the accepted lag range.
-      % Note that "thisdata" and "thisamp" are both signed; the division
-      % makes "normamp" positive no matter what the peak's sign was.
+      if ~isnan(bestidx)
+        % Threshold around the peak to get the accepted lag range.
+        % Note that "thisdata" and "thisamp" are both signed; the division
+        % makes "normamp" positive no matter what the peak's sign was.
 
-      thisamp = thisdata(bestidx);
-      normamp = thisdata / thisamp;
-      ampmask = normamp >= magthresh;
+        thisamp = thisdata(bestidx);
+        normamp = thisdata / thisamp;
+        ampmask = normamp >= magthresh;
 
-      thislagmin = laglist(bestidx);
-      thislagmax = laglist(bestidx);
+        thislagmin = laglist(bestidx);
+        thislagmax = laglist(bestidx);
 
-      % There's probably a Matlab way to do this, but do it by hand.
+        % There's probably a Matlab way to do this, but do it by hand.
 
-      inpeak = true;
-      for lidx = bestidx:lagcount
-        inpeak = inpeak & ampmask(lidx);
-        if inpeak
-          thislagmin = min(thislagmin, laglist(lidx));
-          thislagmax = max(thislagmax, laglist(lidx));
+        inpeak = true;
+        for lidx = bestidx:lagcount
+          inpeak = inpeak & ampmask(lidx);
+          if inpeak
+            thislagmin = min(thislagmin, laglist(lidx));
+            thislagmax = max(thislagmax, laglist(lidx));
+          end
         end
+
+        inpeak = true;
+        for lidx = bestidx:-1:1
+          inpeak = inpeak & ampmask(lidx);
+          if inpeak
+            thislagmin = min(thislagmin, laglist(lidx));
+            thislagmax = max(thislagmax, laglist(lidx));
+          end
+        end
+
+        % Save these.
+        guessamp(destidx,srcidx,tidx) = thisamp;
+        guesslagmin(destidx,srcidx,tidx) = thislagmin;
+        guesslagmax(destidx,srcidx,tidx) = thislagmax;
       end
 
-      inpeak = true;
-      for lidx = bestidx:-1:1
-        inpeak = inpeak & ampmask(lidx);
-        if inpeak
-          thislagmin = min(thislagmin, laglist(lidx));
-          thislagmax = max(thislagmax, laglist(lidx));
-        end
-      end
-
-      % Save these.
-      guessamp(destidx,srcidx) = thisamp;
-      guesslagmin(destidx,srcidx) = thislagmin;
-      guesslagmax(destidx,srcidx) = thislagmax;
     end
-
   end
 end
 
@@ -165,46 +185,54 @@ timemask = (winlist >= min(timerange_ms)) & (winlist <= max(timerange_ms));
 
 for destidx = 1:destcount
   for srcidx = 1:srccount
+    for tidx = 1:trialcount
 
-    lagrange = ...
-      [ guesslagmin(destidx,srcidx), guesslagmax(destidx,srcidx) ];
-    amprange = magacceptrange * guessamp(destidx,srcidx);
-
-
-    % Extract just this pair and call the search function.
-    % We can't call the search function globally because the lag range
-    % varies by pair.
-
-    thispairdata = struct();
-    thispairdata.destchans = destchans(destidx);
-    thispairdata.srcchans = srcchans(srcidx);
-    thispairdata.delaylist_ms = laglist;
-    thispairdata.windowlist_ms = winlist;
-
-    thispairdata.(datafield) = avgdata(destidx,srcidx,:,:);
-
-    peakdata = eiCalc_findTimeLagPeaks( ...
-      thispairdata, datafield, timesmooth_ms, lagrange, method );
+      lagrange = ...
+        [ guesslagmin(destidx,srcidx,tidx), guesslagmax(destidx,srcidx,tidx) ];
+      amprange = magacceptrange * guessamp(destidx,srcidx,tidx);
 
 
-    % Mask the search data and compute statistics.
+      % Extract just this pair and call the search function.
+      % We can't call the search function globally because the lag range
+      % varies by pair and by trial.
 
-    thislagdata = reshape( peakdata.peaklags, size(winlist) );
-    thisampdata = reshape( peakdata.peakamps, size(winlist) );
+      thispairdata = struct();
+      thispairdata.destchans = destchans(destidx);
+      thispairdata.srcchans = srcchans(srcidx);
+      thispairdata.delaylist_ms = laglist;
+      thispairdata.windowlist_ms = winlist;
+      thispairdata.trialnums = NaN;
 
-    ampmask = ...
-      (thisampdata >= min(amprange)) & (thisampdata <= max(amprange));
+      thispairdata.([ datafield 'data' ]) = ...
+        datavals(destidx,srcidx,tidx,:,:);
+      thispairdata.([ datafield 'count' ]) = ...
+        countvals(destidx,srcidx,tidx,:,:);
+      thispairdata.([ datafield 'var' ]) = ...
+        varvals(destidx,srcidx,tidx,:,:);
 
-    thislagdata = thislagdata(ampmask & timemask);
-    thisampdata = thisampdata(ampmask & timemask);
+      peakdata = eiCalc_findTimeLagPeaks( ...
+        thispairdata, datafield, timesmooth_ms, lagrange, method );
 
-    if ~isempty(thislagdata)
-      ampmean(destidx,srcidx) = mean(thisampdata);
-      ampdev(destidx,srcidx) = std(thisampdata);
-      lagmean(destidx,srcidx) = mean(thislagdata);
-      lagdev(destidx,srcidx) = std(thislagdata);
+
+      % Mask the search data and compute statistics.
+
+      thislagdata = reshape( peakdata.peaklags, size(winlist) );
+      thisampdata = reshape( peakdata.peakamps, size(winlist) );
+
+      ampmask = ...
+        (thisampdata >= min(amprange)) & (thisampdata <= max(amprange));
+
+      thislagdata = thislagdata(ampmask & timemask);
+      thisampdata = thisampdata(ampmask & timemask);
+
+      if ~isempty(thislagdata)
+        ampmean(destidx,srcidx,tidx) = mean(thisampdata);
+        ampdev(destidx,srcidx,tidx) = std(thisampdata);
+        lagmean(destidx,srcidx,tidx) = mean(thislagdata);
+        lagdev(destidx,srcidx,tidx) = std(thislagdata);
+      end
+
     end
-
   end
 end
 

@@ -9,13 +9,13 @@ function [ ampgoodmask laggoodmask ] = eiAux_makeValidMask( ...
 %
 % This tolerates NaN values.
 %
-% "ampmean" is a matrix indexed by (destidx,srcidx) with mean
+% "ampmean" is a matrix indexed by (destidx,srcidx,trialidx) with mean
 %   pairwise information peak amplitude values.
-% "ampdev" is a matrix indexed by (destidx,srcidx) with the standard
+% "ampdev" is a matrix indexed by (destidx,srcidx,trialidx) with the standard
 %   deviation of pairwise information peak amplitude values.
-% "lagmean" is a matrix indexed by (destidx,srcidx) with mean
+% "lagmean" is a matrix indexed by (destidx,srcidx,trialidx) with mean
 %   pairwise information peak time lag values.
-% "lagdev" is a matrix indexed by (destidx,srcidx) with the standard
+% "lagdev" is a matrix indexed by (destidx,srcidx,trialidx) with the standard
 %   deviation of pairwise information peak time lag values.
 % "accept_config" is a structure with the following fields:
 %   "max_amp_dev" is the largest accepted amplitude standard deviation.
@@ -26,9 +26,9 @@ function [ ampgoodmask laggoodmask ] = eiAux_makeValidMask( ...
 %     a fraction of the maximum absolute value that must be present for the
 %     time lag estimate to be considered valid.
 %
-% "ampgoodmask" is a matrix indexed by (destidx,srcidx) that's true
+% "ampgoodmask" is a matrix indexed by (destidx,srcidx,trialidx) that's true
 %   for valid amplitudes and false otherwise.
-% "laggoodmask" is a matrix indexed by (destidx,srcidx) that's true
+% "laggoodmask" is a matrix indexed by (destidx,srcidx,trialidx) that's true
 %   for valid time lags and false otherwise.
 
 
@@ -36,26 +36,42 @@ function [ ampgoodmask laggoodmask ] = eiAux_makeValidMask( ...
 % in calling conventions, for now.
 
 
+% First pass: Do the "was this well-behaved" checks, using standard deviation.
+
 max_amp_dev = accept_config.max_amp_dev;
 max_lag_dev = accept_config.max_lag_dev;
-min_amp_for_lag = accept_config.min_amp_for_lag;
-min_amp_rel_for_lag = accept_config.min_amp_rel_for_lag;
-
-% Convert the relative amplitude into an absolute amplitude and merge with
-% the absolute amplitude constraint.
-maxamp = max(max( abs(ampmean) ));
-min_amp_for_lag = max( min_amp_for_lag, maxamp * min_amp_rel_for_lag );
-
 
 ampgoodmask = (ampdev <= max_amp_dev);
 laggoodmask = (lagdev <= max_lag_dev);
 
-hadamp = ( abs(ampmean) >= min_amp_for_lag );
 
-% FIXME - Assume that if the amplitude varied a lot, we _did_ have enough
-% high-amplitude samples for a valid time lag estimate.
-hadamp(~ampgoodmask) = true;
+% Second pass: Do the "could we actually get a lag estimate" checks.
+% The relative amplitude check has to be evaluated per-trial.
 
+min_amp_for_lag = accept_config.min_amp_for_lag;
+min_amp_rel_for_lag = accept_config.min_amp_rel_for_lag;
+
+hadamp = nan(size(ampgoodmask));
+
+for tidx = 1:size(hadamp,3)
+
+  ampslice = abs( ampmean(:,:,tidx) );
+  maxamp = max( ampslice, [], 'all' );
+
+  this_min_amp = max( min_amp_for_lag, ...
+    maxamp * min_amp_rel_for_lag );
+
+  hadamp(:,:,tidx) = ( ampslice >= this_min_amp );
+
+end
+
+% FIXME - Assume that if the amplitude varied a lot (large deviation),
+% we _did_ have enough high-amplitude samples for a valid time lag estimate.
+
+largedevmask = (~ampgoodmask) &(~isnan(ampdev));
+hadamp(largedevmask) = true;
+
+% Apply the "we had high enough amplitude to estimate lag" mask.
 laggoodmask = laggoodmask & hadamp;
 
 

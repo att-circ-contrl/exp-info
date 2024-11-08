@@ -1,0 +1,15 @@
+Trial processing flags are specified as a cell array containing zero or
+more of the following character vectors:
+
+- 'avgtrials' generates data averaged across trials.
+- 'pertrial' generates per-trial data, indexed by trial.
+- 'spantrials' generates data by concatenating or otherwise aggregating
+    across trials.
+
+- 'parallel' indicates that a multithreaded implementation should be
+    used (if available). This requires the Parallel Computing Toolbox.
+
+The trial processing switches affect the structure of the output data; this
+is documented in TIMEWINLAGDATA.txt.
+
+(This is the end of the file.)

@@ -29,7 +29,7 @@ function winlagdata = eiCalc_doTimeAndLagAnalysis( ...
 % "winlagparams" is a structure giving time window and time lag information,
 %   per TIMEWINLAGSPEC.txt.
 % "flags" is a cell array containing zero or more of the following character
-%   vectors:
+%   vectors, per PROCFLAGS.txt:
 %   'avgtrials' generates data averaged across trials, per TIMEWINLAGDATA.txt.
 %   'pertrial' generates per-trial data, per TIMEWINLAGDATA.txt.
 %   'spantrials' generates data by concatenating or otherwise aggregating
@@ -41,7 +41,7 @@ function winlagdata = eiCalc_doTimeAndLagAnalysis( ...
 %   'detrend' detrends each signal.
 %   'hilbert' generates a complex-valued analytic signal for each signal.
 %   'angle' takes the instantaneous phase (in radians) of the analytic signal.
-% "analysis_func" is an analysis function handle, per TIMEWINLAGFUNCS.
+% "analysis_func" is an analysis function handle, per TIMEWINLAGFUNCS.txt.
 % "analysis_params" is a tuning parameter structure to be passed to the
 %   analysis function handle.
 % "filter_preproc" is a cell array containing zero or more character vectors
@@ -109,10 +109,15 @@ winrangessrc = eiCalc_helper_getWindowSamps( samprate, ...
 
 
 % Get field names, now that we have a syntax for querying it.
+% This is described in TIMEWINLAGFUNCS.txt.
+% NOTE - This returns the base field name. The actual stored data is in
+% FOOdata, FOOcount, and FOOvar.
 
 scratch = analysis_func( [], [], samprate, [], analysis_params );
 resultfields = fieldnames(scratch);
 
+% Store suffixes while we're at it.
+suffixlist = { 'data', 'count', 'var' };
 
 
 %
@@ -125,6 +130,10 @@ winlagdata.delaylist_ms = delaylist_samps * 1000 / samprate;
 
 winlagdata.windowlist_ms = winlagparams.timelist_ms;
 winlagdata.windowsize_ms = winlagparams.time_window_ms;
+
+% FIXME - Make up trial numbers.
+% The user can replace these if they have a canonical list.
+winlagdata.trialnums = 1:trialcount;
 
 
 
@@ -150,7 +159,7 @@ trialdata_src_filter = ...
 % them with later).
 
 % Average and deviation.
-templateavg = nan([ chancount_dest chancount_src wincount delaycount ]);
+templateavg = nan([ chancount_dest chancount_src 1 wincount delaycount ]);
 
 % Temporary output when iterating windows.
 templateonewindow = ...
@@ -164,7 +173,7 @@ templatepertrial = ...
   nan([ chancount_dest chancount_src trialcount wincount delaycount ]);
 
 % Trial-spanning output.
-templateconcat =  nan([ chancount_dest chancount_src wincount delaycount ]);
+templateconcat =  nan([ chancount_dest chancount_src 1 wincount delaycount ]);
 
 
 
@@ -172,21 +181,22 @@ templateconcat =  nan([ chancount_dest chancount_src wincount delaycount ]);
 % Initialize output.
 
 for fidx = 1:length(resultfields)
-
   thisfield = resultfields{fidx};
 
-  if want_avg
-    winlagdata.([ thisfield 'avg' ]) = templateavg;
-    winlagdata.([ thisfield 'count' ]) = templateavg;
-    winlagdata.([ thisfield 'var' ]) = templateavg;
-  end
+  for sidx = 1:length(suffixlist)
+    thissuffix = suffixlist{sidx};
 
-  if want_pertrial
-    winlagdata.([ thisfield 'trials' ]) = templatepertrial;
-  end
+    if want_avg
+      winlagdata.([ thisfield 'avg' thissuffix ]) = templateavg;
+    end
 
-  if want_spantrials
-    winlagdata.([ thisfield 'single' ]) = templateconcat;
+    if want_pertrial
+      winlagdata.([ thisfield 'trials' thissuffix ]) = templatepertrial;
+    end
+
+    if want_spantrials
+      winlagdata.([ thisfield 'concat' thissuffix ]) = templateconcat;
+    end
   end
 end
 
@@ -215,7 +225,11 @@ for widx = 1:wincount
 
   for fidx = 1:length(resultfields)
     thisfield = resultfields{fidx};
-    thiswinresults.( thisfield ) = templateonewindow;
+
+    for sidx = 1:length(suffixlist)
+      thissuffix = suffixlist{sidx};
+      thiswinresults.([ thisfield thissuffix ]) = templateonewindow;
+    end
   end
 
 
@@ -300,16 +314,20 @@ for widx = 1:wincount
           for fidx = 1:length(resultfields)
             thisfield = resultfields{fidx};
 
-            scratch = thiswinresults.( thisfield );
-            scratch(cidxdest,cidxsrc,trialidx,1:delaycount) = ...
-              thisresult.( thisfield );
-            thiswinresults.( thisfield ) = scratch;
+            for sidx = 1:length(suffixlist)
+              thissuffix = suffixlist{sidx};
 
-            if want_pertrial
-              scratch = winlagdata.([ thisfield 'trials' ]);
-              scratch(cidxdest,cidxsrc,trialidx,widx,1:delaycount) = ...
-                thisresult.( thisfield );
-              winlagdata.([ thisfield 'trials' ]) = scratch;
+              scratch = thiswinresults.([ thisfield thissuffix ]);
+              scratch(cidxdest,cidxsrc,trialidx,1:delaycount) = ...
+                thisresult.([ thisfield thissuffix ]);
+              thiswinresults.([ thisfield thissuffix ]) = scratch;
+
+              if want_pertrial
+                scratch = winlagdata.([ thisfield 'trials' thissuffix ]);
+                scratch(cidxdest,cidxsrc,trialidx,widx,1:delaycount) = ...
+                  thisresult.([ thisfield thissuffix ]);
+                winlagdata.([ thisfield 'trials' thissuffix ]) = scratch;
+              end
             end
           end
 
@@ -332,10 +350,14 @@ for widx = 1:wincount
         for fidx = 1:length(resultfields)
           thisfield = resultfields{fidx};
 
-          scratch = winlagdata.([ thisfield 'single' ]);
-          scratch(cidxdest,cidxsrc,widx,1:delaycount) = ...
-            thisresult.( thisfield );
-          winlagdata.([ thisfield 'single' ]) = scratch;
+          for sidx = 1:length(suffixlist)
+            thissuffix = suffixlist{sidx};
+
+            scratch = winlagdata.([ thisfield 'concat' thissuffix ]);
+            scratch(cidxdest,cidxsrc,1,widx,1:delaycount) = ...
+              thisresult.([ thisfield thissuffix ]);
+            winlagdata.([ thisfield 'concat' thissuffix ]) = scratch;
+          end
         end
 
       end
@@ -355,60 +377,84 @@ for widx = 1:wincount
 
       winavg = templateonewindowavg;
       wincount = templateonewindowavg;
+      winvarint = templateonewindowavg;
       winvar = templateonewindowavg;
 
-      thisresult = thiswinresults.( thisfield );
-      validmask = ~isnan(thisresult);
+      thisresultdata = thiswinresults.([ thisfield 'data' ]);
+      thisresultcount = thiswinresults.([ thisfield 'count' ]);
+      thisresultvar = thiswinresults.([ thisfield 'var' ]);
+      validmask = ~isnan(thisresultdata);
 
 
-      % Get the count and the average.
+      % Get the count and the average and the within-trial variance.
       % Ignore NaN entries.
 
       for trialidx = 1:trialcount
         for delayidx = 1:delaycount
-          thisresultslice = thisresult(:,:,trialidx,delayidx);
+          thisresultdataslice = thisresultdata(:,:,trialidx,delayidx);
+          thisresultcountslice = thisresultcount(:,:,trialidx,delayidx);
+          thisresultvarslice = thisresultvar(:,:,trialidx,delayidx);
+
           thisvalid = validmask(:,:,trialidx,delayidx);
 
+          % The averages are weighted by sample counts.
+
           avgslice = winavg(:,:,delayidx);
-          avgslice(thisvalid) = ...
-            avgslice(thisvalid) + thisresultslice(thisvalid);
+          avgslice(thisvalid) = avgslice(thisvalid) ...
+      + thisresultdataslice(thisvalid) .* thisresultcountslice(thisvalid);
           winavg(:,:,delayidx) = avgslice;
 
+          varintslice = winvarint(:,:,delayidx);
+          varintslice(thisvalid) = varintslice(thisvalid) ...
+      + thisresultvarslice(thisvalid) .* thisresultcountslice(thisvalid);
+          winvarint(:,:,delayidx) = varintslice;
+
+          % Tally the sample counts for computing the weighted average.
+
           countslice = wincount(:,:,delayidx);
-          countslice = countslice + thisvalid;
+          countslice(thisvalid) = countslice(thisvalid) ...
+            + thisresultcountslice(thisvalid);
           wincount(:,:,delayidx) = countslice;
         end
       end
 
       winavg = winavg ./ wincount;
+      winvarint = winvarint ./ wincount;
 
 
-      % Get the variance.
+      % Get the between-trial variance.
 
       for trialidx = 1:trialcount
         for delayidx = 1:delaycount
-          thisresultslice = thisresult(:,:,trialidx,delayidx);
+          thisresultdataslice = thisresultdata(:,:,trialidx,delayidx);
+          thisresultcountslice = thisresultcount(:,:,trialidx,delayidx);
+
           thisvalid = validmask(:,:,trialidx,delayidx);
 
           % Get (X-avg)^2.
-          thisresultslice = thisresultslice - winavg(:,:,delayidx);
-          thisresultslice = thisresultslice .* thisresultslice;
+          thisresultdataslice = thisresultdataslice - winavg(:,:,delayidx);
+          thisresultdataslice = thisresultdataslice .* thisresultdataslice;
+
+          % The average is weighted by sample count.
 
           varslice = winvar(:,:,delayidx);
-          varslice(thisvalid) = ...
-            varslice(thisvalid) + thisresultslice(thisvalid);
+          varslice(thisvalid) = varslice(thisvalid) ...
+            + thisresultslice(thisvalid) .* thisresultcountslice(thisvalid);
           winvar(:,:,delayidx) = varslice;
         end
       end
 
       winvar = winvar ./ wincount;
 
+      % Add the within-trial variance to get the total variance.
+      winvar = winvar + winvarint;
+
 
       % Update global statistics.
 
-      scratchavg = winlagdata.([ thisfield 'avg' ]);
-      scratchvar = winlagdata.([ thisfield 'var' ]);
-      scratchcount = winlagdata.([ thisfield 'count' ]);
+      scratchavg = winlagdata.([ thisfield 'avgdata' ]);
+      scratchvar = winlagdata.([ thisfield 'avgvar' ]);
+      scratchcount = winlagdata.([ thisfield 'avgcount' ]);
 
       for delayidx = 1:delaycount
         scratchavg(:,:,widx,delayidx) = winavg(:,:,delayidx);
@@ -416,9 +462,9 @@ for widx = 1:wincount
         scratchcount(:,:,widx,delayidx) = wincount(:,:,delayidx);
       end
 
-      winlagdata.([ thisfield 'avg' ]) = scratchavg;
-      winlagdata.([ thisfield 'var' ]) = scratchvar;
-      winlagdata.([ thisfield 'count' ]) = scratchcount;
+      winlagdata.([ thisfield 'avgdata' ]) = scratchavg;
+      winlagdata.([ thisfield 'avgvar' ]) = scratchvar;
+      winlagdata.([ thisfield 'avgcount' ]) = scratchcount;
 
     end
   end

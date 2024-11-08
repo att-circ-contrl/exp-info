@@ -10,11 +10,11 @@ function [ pairmean pairdev ] = ...
 %
 % "timelagdata" is a data structure per TIMEWINLAGDATA.txt.
 % "datafield" is a character vector with the name of the field being operated
-%   on (e.g. 'xcorrsingle', 'mutualavg', etc).
+%   on (e.g. 'xcorrconcatdata', 'mutualavgdata', etc).
 %
-% "pairmean" is a matrix indexed by (destchan, srcchan) containing the mean
-%   of the analysis data field for that channel pair.
-% "pairdev" is a matrix indexed by (destchan, srcchan) containing the
+% "pairmean" is a matrix indexed by (destchan, srcchan, trial) containing the
+%   mean of the analysis data field for that channel pair.
+% "pairdev" is a matrix indexed by (destchan, srcchan, trial) containing the
 %   standard deviation of the analysis data field for that channel pair.
 
 
@@ -29,19 +29,21 @@ srccount = length(srcchans);
 
 thisdata = timelagdata.(datafield);
 
+trialcount = size(thisdata,3);
+
 
 
 % Initialize output.
 
-pairmean = zeros([ destcount srccount ]);
-pairdev = nan([ destcount srccount ]);
+pairmean = zeros([ destcount srccount trialcount ]);
+pairdev = nan([ destcount srccount trialcount ]);
 
 
 
 % Consider each pair only once, mask self-comparisions, and avoid squashed.
 
 pairmask = nlUtil_getPairMask( destchans, srcchans );
-pairmask = pairmask & eiAux_getPairValidMask( thisdata );
+pairtrialmask = eiAux_getPairValidMask( thisdata );
 
 
 
@@ -49,15 +51,17 @@ pairmask = pairmask & eiAux_getPairValidMask( thisdata );
 
 for destidx = 1:destcount
   for srcidx = 1:srccount
-    if pairmask(destidx, srcidx)
+    for tidx = 1:trialcount
+      if pairmask(destidx, srcidx) && pairtrialmask(destidx, srcidx, tidx)
 
-      thisslice = thisdata(destidx,srcidx,:,:);
-      thisslice = reshape(thisslice, 1, []);
-      thisslice = thisslice(~isnan(thisslice));
+        thisslice = thisdata(destidx,srcidx,tidx,:,:);
+        thisslice = reshape(thisslice, 1, []);
+        thisslice = thisslice(~isnan(thisslice));
 
-      if ~isempty(thisslice)
-        pairmean(destidx,srcidx) = mean(thisslice);
-        pairdev(destidx,srcidx) = std(thisslice);
+        if ~isempty(thisslice)
+          pairmean(destidx,srcidx,tidx) = mean(thisslice);
+          pairdev(destidx,srcidx,tidx) = std(thisslice);
+        end
       end
 
     end

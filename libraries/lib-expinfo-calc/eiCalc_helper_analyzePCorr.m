@@ -12,6 +12,8 @@ function result = eiCalc_helper_analyzePCorr( ...
 % "wavedest" and "wavesrc" are expected to be either 1 x Nsamples vectors
 %   or Ntrials x Nsamples matricies containing signal data.
 % "params" contains the following fields:
+%   "replicates" is the number of replicates to use for bootstrapped variance
+%     estimation, or 0 to not use bootstrapping.
 %   "want_parallel" is true to use the multithreaded implementation and
 %     false otherwise.
 %   "want_squared" is true to report r^2 and false to report r.
@@ -44,14 +46,12 @@ scratchdata = { wavedest, wavesrc };
 
 % Calculate time-lagged Pearson's correlation.
 
-replicates = 0;
-
 if params.want_parallel
   [ rlist rvars ] = cEn_calcLaggedPCorr_MT( ...
-    scratchdata, delaylist, replicates );
+    scratchdata, delaylist, params.replicates );
 else
   [ rlist rvars ] = cEn_calcLaggedPCorr_MT( ...
-    scratchdata, delaylist, replicates );
+    scratchdata, delaylist, params.replicates );
 end
 
 
@@ -74,7 +74,10 @@ end
 % Store this in an appropriately-named field.
 
 result = struct();
-result.pcorr = rlist;
+result.pcorrdata = rlist;
+result.pcorrvar = rvars;
+% FIXME - Ignore trial trimming.
+result.pcorrcount = ones(size( rlist )) * trialcount * sampcount;
 
 
 % Done.

@@ -15,37 +15,43 @@ Metadata fields:
   specifying where the middle of each analysis time window is.
 "windowsize_ms" is a scalar holding the duration of the analysis time windows.
 
+"trialnums" is a vector containing trial numbers (arbitrary integer values
+  used as labels for each trial).
+
 
 Analysis results:
 
 
-If averaging across trials was requested, then for each analysis result
-variable "FOO", the following fields will exist:
+For each type of analysis, fields with a common prefix and varying suffixes
+will exist.
 
-"FOOavg" is a matrix indexed by (destchan, srcchan, winidx, lagidx)
-  containing the values of FOO, averaged across trials.
-"FOOcount" is a matrix indexed by (destchan, srcchan, winidx, lagidx)
-  containing the number of trials used to produce the averages in FOOavg.
-"FOOvar" is a matrix indexed by (destchan, srcchan, winidx, lagidx)
-  containing the variance of the values used to produce the averages in
-  FOOavg.
+These are all matrices. For both per-trial and aggregate data, these are
+indexed by (destchan, srcchan, trialidx, winidx, lagidx). Aggregate data
+has a trial dimension of size 1.
 
+"FOOdata" contains the values of the variable being measured. These are
+  often but not always averages. Some values may be NaN (if they failed
+  the acceptance filter or otherwise couldn't be computed).
+"FOOcount" contains the number of samples used to produce the averages in
+  FOOdata.
+"FOOvar" contains the variance of the sample values used to produce the
+  averages in FOOdata.
 
-If per-trial data was requested, then for each analysis result variable
-"FOO", the following field will exist:
-
-"FOOtrials" is a matrix indexed by (destchan, srcchan, trialidx, winidx,
-  lagidx) containing the computed values of FOO.
-
-If an acceptance filter was used, cells of FOOtrials that were not accepted
-contain NaN.
+The intention is that the "count" and "var" fields allow uncertainty to be
+propagated through any downstream calculations performed on the "data" values.
 
 
-If concatenating or aggregating trials was requested, then for each analysis
-result variable "FOO", the following field will exist:
+Each method of iterating trials (per PROCFLAGS.txt) produces a FOO label
+with a different suffix:
 
-"FOOsingle" is a matrix indexed by (destchan, srcchan, winidx, lagidx)
-  containing the values of FOO for aggregated or concatenated trials.
+'avgtrials' produces "BARavg".
+'pertrial' produces "BARtrials".
+'spantrials' produces "BARconcat".
+
+
+...So, "BARavgdata" would be the averaged-across-trials data values
+associated with prefix "BAR", "BARavgvar" would be their variance, and so
+forth.
 
 
 (This is the end of the file.)

@@ -13,7 +13,7 @@ function [ vstimelist vslaglist ] = eiCalc_collapseTimeLagAverages( ...
 %
 % "timelagdata" is a data structure per TIMEWINLAGDATA.txt.
 % "datafield" is a character vector with the name of the field to average.
-%   If the specified field isn't found, "FOOavg" is also tested.
+%   If the specified field isn't found, "FOOdata" is also tested.
 % "timeranges_ms" is a cell array. Each cell specifies an analysis window
 %   time range [ min max ] in milliseconds to average across. A range of
 %   [] indicates all window times.
@@ -32,12 +32,12 @@ function [ vstimelist vslaglist ] = eiCalc_collapseTimeLagAverages( ...
 %     sampled, in milliseconds (copied from "lagranges_ms").
 %   "windowlist_ms" is a vector containing timestamps in milliseconds
 %     specifying where the middle of each analysis window is.
-%   "avg" is a matrix indexed by (destchan, srcchan, winidx) containing
-%     the average data values. NOTE - This is just the mean of "FOOavg",
-%     ignoring "count".
-%   "dev" is a matrix indexed by (destchan, srcchan, winidx) containing
-%     the standard deviation of the data values. NOTE - This is just the
-%     standard deviation of "FOOavg", ignoring "var" and "count".
+%   "avg" is a matrix indexed by (destchan, srcchan, trialidx, winidx)
+%     containing the average data values. NOTE - This is just the mean
+%     of "FOOdata", ignoring "count".
+%   "dev" is a matrix indexed by (destchan, srcchan, trialidx, winidx)
+%     containing the standard deviation of the data values. NOTE - This is
+%     just the standard deviation of "FOOdata", ignoring "var" and "count".
 %
 % "vslaglist" is a struct array, with a number of elements equal to the
 %   number of analysis window ranges. Each structure contains the following
@@ -50,12 +50,12 @@ function [ vstimelist vslaglist ] = eiCalc_collapseTimeLagAverages( ...
 %     milliseconds.
 %   "windowrange_ms" is a vector containing the [ min max ] analysis window
 %     locations used, in milliseconds (copied from "timeranges_ms").
-%   "avg" is a matrix indexed by (destchan, srcchan, lagidx) containing
-%     the average data values. NOTE - This is just the mean of "FOOavg",
-%     ignoring "count".
-%   "dev" is a matrix indexed by (destchan, srcchan, lagidx) containing
-%     the standard deviation of the data values. NOTE - This is just the
-%     standard deviation of "FOOavg", ignoring "var" and "count".
+%   "avg" is a matrix indexed by (destchan, srcchan, trialidx, lagidx)
+%     containing the average data values. NOTE - This is just the mean
+%     of "FOOdata", ignoring "count".
+%   "dev" is a matrix indexed by (destchan, srcchan, trialidx, lagidx)
+%     containing the standard deviation of the data values. NOTE - This is
+%     just the standard deviation of "FOOdata", ignoring "var" and "count".
 
 
 % Initialize output.
@@ -86,9 +86,9 @@ wincount = length(winlist);
 % Sanity-check the requested field, and extract it.
 
 if ~isfield( timelagdata, datafield )
-  % Try falling back to "FOOavg".
-  if isfield( timelagdata, [ datafield 'avg' ] )
-    datafield = [ datafield 'avg' ];
+  % Try falling back to "FOOdata".
+  if isfield( timelagdata, [ datafield 'data' ] )
+    datafield = [ datafield 'data' ];
   else
     disp([ '### [eiCalc_collapseTimeLagAverages]  Can''t find field "' ...
       datafield '".' ]);
@@ -96,7 +96,9 @@ if ~isfield( timelagdata, datafield )
   end
 end
 
-fieldavg = timelagdata.(datafield);
+fielddata = timelagdata.(datafield);
+
+trialcount = size(fielddata, 3);
 
 
 
@@ -127,12 +129,14 @@ for rangeidx = 1:length(lagranges_ms)
   thisdev = [];
   for destidx = 1:destcount
     for srcidx = 1:srccount
-      for widx = 1:wincount
-        thisslice = fieldavg(destidx,srcidx,widx,lagmask);
-        thisslice = thisslice(~isnan(thisslice));
+      for tidx = 1:trialcount
+        for widx = 1:wincount
+          thisslice = fielddata(destidx,srcidx,tidx,widx,lagmask);
+          thisslice = thisslice(~isnan(thisslice));
 
-        thisavg(destidx,srcidx,widx) = mean(thisslice);
-        thisdev(destidx,srcidx,widx) = std(thisslice);
+          thisavg(destidx,srcidx,tidx,widx) = mean(thisslice);
+          thisdev(destidx,srcidx,tidx,widx) = std(thisslice);
+        end
       end
     end
   end
@@ -173,12 +177,14 @@ for rangeidx = 1:length(timeranges_ms)
   thisdev = [];
   for destidx = 1:destcount
     for srcidx = 1:srccount
-      for lidx = 1:lagcount
-        thisslice = fieldavg(destidx,srcidx,winmask,lidx);
-        thisslice = thisslice(~isnan(thisslice));
+      for tidx = 1:trialcount
+        for lidx = 1:lagcount
+          thisslice = fielddata(destidx,srcidx,tidx,winmask,lidx);
+          thisslice = thisslice(~isnan(thisslice));
 
-        thisavg(destidx,srcidx,lidx) = mean(thisslice);
-        thisdev(destidx,srcidx,lidx) = std(thisslice);
+          thisavg(destidx,srcidx,tidx,lidx) = mean(thisslice);
+          thisdev(destidx,srcidx,tidx,lidx) = std(thisslice);
+        end
       end
     end
   end

@@ -5,12 +5,13 @@ function newdata = eiCalc_smoothTimeLagAverages( ...
 %   olddata, datafields, timesmooth_ms, lagsmooth_ms, method )
 %
 % This function smooths time-and-lag analysis data and optionally re-bins it
-% using coarser bins. This operates on data that has already been averaged
-% across trials or spanned across trials.
+% using coarser bins.
+%
+% This can operate on both aggregate and per-trial data fields.
 %
 % "olddata" is a data structure per TIMEWINLAGDATA.txt.
 % "datafields" is a cell array containing the field names in "olddata" to
-%   operate on. For each field name "FOO", if "FOOavg", "FOOvar", and
+%   operate on. For each field name "FOO", if "FOOdata", "FOOvar", and
 %   "FOOcount" exist, they're used. Otherwise, "FOO" itself is used.
 % "timesmooth_ms" is the smoothing/binning window size for window times, in
 %   milliseconds. Specify NaN to not smooth window times.
@@ -70,27 +71,39 @@ newwindowcount = length(windowlist_new);
 
 
 %
-% Figure out which fields are avg/var/count tuples and which aren't.
+% Figure out which fields are data/var/count tuples and which aren't.
 
-
-
-% Sanity-check the field list.
+% FIXME - Blithely assume that all per-trial data will be 5-dimensional.
+% If the user tests with a single time lag, that won't be the case.
 
 scratchfields = datafields;
 datafields = {};
-have_avg = false([]);
+have_tuple = false([]);
+trial_counts = [];
 
 for fidx = 1:length(scratchfields)
   thisfield = scratchfields{fidx};
 
-  if isfield( olddata, [ thisfield 'avg' ] ) ...
+  if isfield( olddata, [ thisfield 'data' ] ) ...
     && isfield( olddata, [ thisfield 'var' ] ) ...
     && isfield( olddata, [ thisfield 'count' ] )
-    have_avg = [ have_avg true ];
+
+    scratch = olddata.([ thisfield 'data' ]);
+
+    have_tuple = [ have_tuple true ];
+    trial_counts = [ trial_counts size(scratch, 3) ];
+
     datafields = [ datafields { thisfield } ];
+
   elseif isfield( olddata, thisfield )
-    have_avg = [ have_avg false ];
+
+    scratch = olddata.(thisfield);
+
+    have_tuple = [ have_tuple false ];
+    trial_counts = [ trial_counts size(scratch, 3) ];
+
     datafields = [ datafields { thisfield } ];
+
   else
     disp([ '### [eiCalc_smoothTimeLagAverages]  Can''t find field "' ...
       thisfield '".' ]);
@@ -106,7 +119,9 @@ for fidx = 1:length(datafields)
 
   thisfield = datafields{fidx};
 
-  newavg = zeros([ destcount srccount newwindowcount newdelaycount ]);
+  newavg = zeros([ destcount srccount ...
+    trial_counts(fidx) newwindowcount newdelaycount ]);
+
   newvar = zeros(size(newavg));
   newcount = zeros(size(newavg));
 
@@ -116,7 +131,7 @@ for fidx = 1:length(datafields)
       thisdelaysrclist = delaysources{didxnew};
       thiswindowsrclist = windowsources{widxnew};
 
-      if have_avg(fidx)
+      if have_tuple(fidx)
         [ thisavg thisvar thiscount ] = helper_averageWithStats( ...
           olddata, thisfield, thisdelaysrclist, thiswindowsrclist );
       else
@@ -124,14 +139,14 @@ for fidx = 1:length(datafields)
           olddata, thisfield, thisdelaysrclist, thiswindowsrclist );
       end
 
-      newavg(:,:,widxnew,didxnew) = thisavg;
-      newvar(:,:,widxnew,didxnew) = thisvar;
-      newcount(:,:,widxnew,didxnew) = thiscount;
+      newavg(:,:,:,widxnew,didxnew) = thisavg;
+      newvar(:,:,:,widxnew,didxnew) = thisvar;
+      newcount(:,:,:,widxnew,didxnew) = thiscount;
 
     end
   end
 
-  newdata.([ thisfield 'avg' ]) = newavg;
+  newdata.([ thisfield 'data' ]) = newavg;
   newdata.([ thisfield 'count' ]) = newcount;
   newdata.([ thisfield 'var' ]) = newvar;
 
@@ -198,22 +213,23 @@ end
 
 
 
-% This fetches "FOOavg", "FOOvar", and "FOOcount" within a region and
+% This fetches "FOOdata", "FOOvar", and "FOOcount" within a region and
 % produces average/variance/count values derived from these.
 
 function [ thisavg thisvar thiscount ] = helper_averageWithStats( ...
   olddata, thisfield, thisdelaysrclist, thiswindowsrclist )
 
-  destcount = length(olddata.destchans);
-  srccount = length(olddata.srcchans);
-
-  thisavg = zeros([ destcount srccount ]);
-  thisvar = zeros(size(thisavg));
-  thiscount = zeros(size(thisavg));
-
-  fieldavg = olddata.([ thisfield 'avg' ]);
+  fielddata = olddata.([ thisfield 'data' ]);
   fieldcount = olddata.([ thisfield 'count' ]);
   fieldvar = olddata.([ thisfield 'var' ]);
+
+  destcount = length(olddata.destchans);
+  srccount = length(olddata.srcchans);
+  trialcount = size(fielddata, 3);
+
+  thisavg = zeros([ destcount srccount trialcount ]);
+  thisvar = zeros(size(thisavg));
+  thiscount = zeros(size(thisavg));
 
   for didxsrc = 1:length(thisdelaysrclist)
     for widxsrc = 1:length(thiswindowsrclist)
@@ -221,16 +237,16 @@ function [ thisavg thisvar thiscount ] = helper_averageWithStats( ...
       didxold = thisdelaysrclist(didxsrc);
       widxold = thiswindowsrclist(widxsrc);
 
-      % These are (destidx,srcidx) matrices, not scalars.
+      % These are (destidx,srcidx,tidx) matrices, not scalars.
 
-      oldavg = fieldavg(:,:,widxold,didxold);
-      oldcount = fieldcount(:,:,widxold,didxold);
-      oldvar = fieldvar(:,:,widxold,didxold);
+      olddata = fielddata(:,:,:,widxold,didxold);
+      oldcount = fieldcount(:,:,:,widxold,didxold);
+      oldvar = fieldvar(:,:,:,widxold,didxold);
 
-      validmask = (~isnan(oldavg)) & (oldcount > 0);
+      validmask = (~isnan(olddata)) & (oldcount > 0);
 
       thisavg(validmask) = thisavg(validmask) ...
-        + ( oldavg(validmask) .* oldcount(validmask) );
+        + ( olddata(validmask) .* oldcount(validmask) );
       thisvar(validmask) = thisvar(validmask) ...
         + ( oldvar(validmask) .* oldcount(validmask) );
       thiscount(validmask) = thiscount(validmask) + oldcount(validmask);
@@ -252,14 +268,15 @@ end
 function [ thisavg thisvar thiscount ] = helper_averageBlind( ...
   olddata, thisfield, thisdelaysrclist, thiswindowsrclist )
 
+  fielddata = olddata.(thisfield);
+
   destcount = length(olddata.destchans);
   srccount = length(olddata.srcchans);
+  trialcount = size(fielddata, 3);
 
-  thisavg = zeros([ destcount srccount ]);
+  thisavg = zeros([ destcount srccount trialcount ]);
   thisvar = zeros(size(thisavg));
   thiscount = zeros(size(thisavg));
-
-  fielddata = olddata.(thisfield);
 
 
   % First pass: Get average and count.
@@ -270,9 +287,9 @@ function [ thisavg thisvar thiscount ] = helper_averageBlind( ...
       didxold = thisdelaysrclist(didxsrc);
       widxold = thiswindowsrclist(widxsrc);
 
-      % These are (destidx,srcidx) matrices, not scalars.
+      % These are (destidx,srcidx,tidx) matrices, not scalars.
 
-      olddata = fielddata(:,:,widxold,didxold);
+      olddata = fielddata(:,:,:,widxold,didxold);
 
       validmask = (~isnan(olddata));
 
@@ -294,12 +311,14 @@ function [ thisavg thisvar thiscount ] = helper_averageBlind( ...
       didxold = thisdelaysrclist(didxsrc);
       widxold = thiswindowsrclist(widxsrc);
 
-      % These are (destidx,srcidx) matrices, not scalars.
+      % These are (destidx,srcidx,tidx) matrices, not scalars.
 
-      olddata = fielddata(:,:,widxold,didxold);
+      olddata = fielddata(:,:,:,widxold,didxold);
 
       validmask = (~isnan(olddata));
 
+      % Anything that comes from one sample has olddata = thisavg, and a
+      % variance of 0. This is fine.
       olddata = olddata - thisavg;
       olddata = olddata .* olddata;
       thisvar(validmask) = thisvar(validmask) + olddata(validmask);

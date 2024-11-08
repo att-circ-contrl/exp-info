@@ -19,25 +19,25 @@ newdata.destchans = destchans;
 newdata.srcchans = srcchans;
 
 
-% Walk through the fields, processing any that are four-dimensional.
+% Walk through the fields, processing any that are five-dimensional.
 
 fieldlist = fieldnames(olddata);
 for fidx = 1:length(fieldlist)
   thisfield = fieldlist{fidx};
-  if 4 == ndims(olddata.(thisfield))
+  if 5 == ndims(olddata.(thisfield))
 
     thisold = olddata.(thisfield);
 
     thisnew = nan(size(thisold));
     for destidx = 1:length(destchans)
-      thisnew(destidx,:,:,:) = thisold( destoldidx(destidx), :, :, : );
+      thisnew(destidx,:,:,:,:) = thisold( destoldidx(destidx), :, :, :, : );
     end
 
     thisold = thisnew;
 
     thisnew = nan(size(thisold));
     for srcidx = 1:length(srcchans)
-      thisnew(:,srcidx,:,:) = thisold( :, srcoldidx(srcidx), :, : );
+      thisnew(:,srcidx,:,:,:) = thisold( :, srcoldidx(srcidx), :, :, : );
     end
 
     newdata.(thisfield) = thisnew;

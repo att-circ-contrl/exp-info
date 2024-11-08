@@ -5,6 +5,8 @@ function anparams = eiCalc_getParamsPCorr( want_squared, flags )
 % This creates a configuration structure suitable for use with the
 % helper_analyzePCorr() analysis function.
 %
+% "replicates" is the number of replicates to use for bootstrapped variance
+%   estimation, or 0 to not use bootstrapping.
 % "want_squared" is true to report r^2 (and its variance) and false to
 %   report r.
 % "flags" is a cell array containing processing flags, per PROCFLAGS.txt.
@@ -14,6 +16,11 @@ function anparams = eiCalc_getParamsPCorr( want_squared, flags )
 
 
 anparams = struct();
+
+
+% Store bootstrapping configuration.
+
+anparams.replicates = replicates;
 
 
 % Store the "want squared" switch.

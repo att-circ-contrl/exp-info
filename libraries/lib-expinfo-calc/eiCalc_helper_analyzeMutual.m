@@ -18,6 +18,8 @@ function result = eiCalc_helper_analyzeMutual( ...
 %     and source channels are discrete (auto-binned if so).
 %   "bins_dest" and "bins_src" specify the number of bins to use when
 %     binning continuous-valued data.
+%   "replicates" is the number of replicates to use for bootstrapped variance
+%     estimation, or 0 to not use bootstrapping.
 %   "want_extrap" is true to perform extrapolation, false otherwise.
 %   "extrap_config" is an extrapolation configuration structure.
 %   "want_parallel" is true to use the multithreaded implementation and
@@ -71,23 +73,23 @@ scratchdata = { wavedest, wavesrc };
 
 % Calculate time-lagged mutual information.
 
-replicates = 0;
-
 if params.want_parallel
   if params.want_extrap
     [ milist mivars ] = cEn_calcLaggedMutualInfo_MT( ...
-      scratchdata, delaylist, binlist, replicates, params.extrap_config );
+      scratchdata, delaylist, binlist, params.replicates, ...
+      params.extrap_config );
   else
     [ milist mivars ] = cEn_calcLaggedMutualInfo_MT( ...
-      scratchdata, delaylist, binlist, replicates );
+      scratchdata, delaylist, binlist, params.replicates );
   end
 else
   if params.want_extrap
     [ milist mivars ] = cEn_calcLaggedMutualInfo( ...
-      scratchdata, delaylist, binlist, replicates, params.extrap_config );
+      scratchdata, delaylist, binlist, params.replicates, ...
+      params.extrap_config );
   else
     [ milist mivars ] = cEn_calcLaggedMutualInfo( ...
-      scratchdata, delaylist, binlist, replicates );
+      scratchdata, delaylist, binlist, params.replicates );
   end
 end
 
@@ -95,7 +97,10 @@ end
 % Store this in an appropriately-named field.
 
 result = struct();
-result.mutual = milist;
+result.mutualdata = milist;
+result.mutualvar = mivars;
+% FIXME - Ignore trial trimming.
+result.mutualcount = ones(size( milist )) * trialcount * sampcount;
 
 
 % Done.

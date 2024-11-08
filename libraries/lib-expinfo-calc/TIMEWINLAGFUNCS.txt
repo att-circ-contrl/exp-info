@@ -19,11 +19,15 @@ result = analysisfunc( wavedest, wavesrc, samprate, delaylist, params )
 
 "result" is a structure with one or more fields. Each field contains a
   vector of the same length as "delaysamps" with analysis result values.
-  These are used to produce result matrices per TIMEWINLAGDATA.txt.
+  Result fields are in groups of three, with the form "FOOdata", "FOOcount",
+  and "FOOvar". These are used to produce result matrices per
+  TIMEWINLAGDATA.txt.
 
 As a special case, passing empty (0x0) matrices as "wavedest" or "wavesrc"
-or "delaylist" must return a result structure containing empty vectors in all
-data fields. This may be used to get a list of the fields that are provided.
+or "delaylist" must return a result structure containing fields with only
+the base field name prefix (i.e. "FOO" rather than "FOOdata", "FOOcount",
+and "FOOvar"), containing empty vectors. This may be used to get a list of
+the fields that are provided.
 
 
 

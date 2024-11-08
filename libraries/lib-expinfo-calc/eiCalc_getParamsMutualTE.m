@@ -1,8 +1,8 @@
-function anparams = ...
-  eiCalc_getParamsMutualTE( bin_count_dest, bin_count_src, flags, exparams )
+function anparams = eiCalc_getParamsMutualTE( ...
+  bin_count_dest, bin_count_src, replicates, flags, exparams )
 
-% function anparams = ...
-%   eiCalc_getParamsMutualTE( bin_count_dest, bin_count_src, flags, exparams )
+% function anparams = eiCalc_getParamsMutualTE( ...
+%   bin_count_dest, bin_count_src, replicates, flags, exparams )
 %
 % This creates a configuration structure suitable for use with the
 % helper_analyzeMutual() and helper_analyzeTransfer() analysis functions.
@@ -13,6 +13,8 @@ function anparams = ...
 % "bin_count_src" is the number of histogram bins to use when processing
 %   signals from the source Field Trip data set. This can be the character
 %   vector 'discrete' to auto-bin discrete-valued data.
+% "replicates" is the number of replicates to use for bootstrapped variance
+%   estimation,  or 0 to not use bootstrapping.
 % "flags" is a cell array containing processing flags, per PROCFLAGS.txt.
 % "exparams" is a structure containing extrapolation tuning paramters, per
 %   EXTRAPOLATION.txt in the conditional entropy library. If this is empty,
@@ -33,6 +35,11 @@ anparams.bins_src = bin_count_src;
 
 anparams.discrete_dest = ischar(bin_count_dest);
 anparams.discrete_src = ischar(bin_count_src);
+
+
+% Store bootstrapping configuration.
+
+anparams.replicates = replicates;
 
 
 % Figure out if we want extrapolation, and store a structure if so.

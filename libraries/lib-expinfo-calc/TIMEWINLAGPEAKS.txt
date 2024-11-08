@@ -10,10 +10,17 @@ fields:
 "windowlist_ms" is a vector containing timestamps in millseconds specifying
   where the middle of each analysis time window was.
 
-"peaklags" is a matrix indexed by (destchan, srcchan, winidx) containing
-  the lag time (in milliseconds) of the peak.
-"peakamps" is a matrix indexed by (destchan, srcchan, winidx) containing
-  the (signed) data value at the peak location.
+"trialnums" is a vector containing trial numbers (arbitrary integer values
+  used as labels for each trial).
+
+
+The following fields are matrices indexed by
+(destchan, srcchan, trialidx, winidx):
+
+"peaklags" contains the lag time (in milliseconds) of the peak.
+"peakamps" contains the (signed) data value at the peak location.
+"peakcounts" contains the number of samples contributing to the peak.
+"peakvars" contains the estimated variance of the peak amplitude.
 
 
 (This is the end of the file.)

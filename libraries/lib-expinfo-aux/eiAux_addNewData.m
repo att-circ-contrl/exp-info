@@ -27,7 +27,8 @@ newsrcchans = newdata.srcchans;
 patchdestchans = patchdata.destchans;
 patchsrcchans = patchdata.srcchans;
 
-newdestfrompatch = nan(size(patchdestchans));
+newdestfrompatch = nan(size( patchdestchans ));
+
 for cidx = 1:length(patchdestchans)
   thischan = patchdestchans(cidx);
   thispos = min(find( strcmp(newdestchans, thischan) ));
@@ -36,7 +37,8 @@ for cidx = 1:length(patchdestchans)
   end
 end
 
-newsrcfrompatch = nan(size(patchsrcchans));
+newsrcfrompatch = nan(size( patchsrcchans ));
+
 for cidx = 1:length(patchsrcchans)
   thischan = patchsrcchans(cidx);
   thispos = min(find( strcmp(newsrcchans, thischan) ));
@@ -52,17 +54,44 @@ if any(isnan(newdestfrompatch)) || any(isnan(newsrcfrompatch))
 end
 
 
-% Walk through fields, merging. Assume anything four-dimensional is data.
-% We can initialize missing fields.
+% Do the same with trial numbers, if we have more than one trial.
+
+newtrialnums = newdata.trialnums;
+patchtrialnums = patchdata.trialnums;
+
+newtrialfrompatch = nan(size( patchtrialnums ));
+
+if length(newtrialnums) > 1
+  for tidx = 1:length(patchtrialnums)
+    thisnum = patchtrialnums(tidx);
+    thispos = min(find( newtrialnums == thisnum ));
+    if ~isempty(thispos)
+      newtrialfrompatch(tidx) = thispos;
+    end
+  end
+
+  % Squawk if we couldn't map trials, but tolerate it.
+  if any(isnan(newtrialfrompatch))
+    disp('###  [eiAux_addNewData]  Couldn''t map all patch trials!');
+  end
+else
+  newtrialfrompatch(:) = 1;
+end
+
+
+% Walk through fields, merging. Assume anything five-dimensional is data.
+% We can initialize missing fields in the destination.
 
 scratchblank = nan([ length(newdata.destchans), length(newdata.srcchans), ...
-  length(newdata.windowlist_ms), length(newdata.delaylist_ms) ]);
+  length(newdata.trialnums), length(newdata.windowlist_ms), length(newdata.delaylist_ms) ]);
 
 fieldlist = fieldnames(patchdata);
 for fidx = 1:length(fieldlist)
   thisfield = fieldlist{fidx};
   scratchpatch = patchdata.(thisfield);
-  if 4 == ndims(scratchpatch)
+
+  if 5 == ndims(scratchpatch)
+
     scratchnew = scratchblank;
     if isfield(newdata, thisfield)
       scratchnew = newdata.(thisfield);
@@ -71,12 +100,16 @@ for fidx = 1:length(fieldlist)
     % Do this by hand instead of playing indexing games, just in case.
     for destidx = 1:length(newdestfrompatch)
       for srcidx = 1:length(newsrcfrompatch)
-        scratchnew( newdestfrompatch(destidx), newsrcfrompatch(srcidx), ...
-          :, :) = scratchpatch( destidx, srcidx, :, : );
+        for tidx = 1:length(newtrialfrompatch)
+          scratchnew( newdestfrompatch(destidx), newsrcfrompatch(srcidx), ...
+            newtrialfrompatch(tidx),:, :) = ...
+            scratchpatch( destidx, srcidx, tidx, :, : );
+        end
       end
     end
 
     newdata.(thisfield) = scratchnew;
+
   end
 end
 

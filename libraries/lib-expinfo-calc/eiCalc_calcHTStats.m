@@ -60,21 +60,39 @@ end
 function result = helper_analysisfunc( ...
   wavefirst, wavesecond, samprate, delaylist, params )
 
-  % NOTE - We're supposed to return a vector with the same length as the
-  % delay list.
+  if isempty(wavefirst) || isempty(wavesecond) || isempty(delaylist)
+    % This is the empty case (querying result fields).
+    result = struct( 'coherence', [], 'powercorrel', [], 'nongauss', [] );
+  else
 
-  [ scratchcoherence scratchcorrel scratchnongauss ] = ...
-    nlProc_compareSignalsHT( wavefirst, wavesecond );
+    % NOTE - We're supposed to return a vector with the same length as the
+    % delay list.
 
-  result = struct();
-  scratchvec = zeros(size(delaylist));
+    [ scratchcoherence scratchcorrel scratchnongauss ] = ...
+      nlProc_compareSignalsHT( wavefirst, wavesecond );
 
-  scratchvec(:) = scratchcoherence;
-  result.coherence = scratchvec;
-  scratchvec(:) = scratchcorrel;
-  result.powercorrel = scratchvec;
-  scratchvec(:) = scratchnongauss;
-  result.nongauss = scratchvec;
+    result = struct();
+
+    scratchvec = zeros(size( delaylist ));
+    countvec = ones(size( scratchvec ));
+    varvec = nan(size( scratchvec ));
+
+    scratchvec(:) = scratchcoherence;
+    result.coherencedata = scratchvec;
+    result.coherencecount = countvec;
+    result.coherencevar = varvec;
+
+    scratchvec(:) = scratchcorrel;
+    result.powercorreldata = scratchvec;
+    result.powercorrelcount = countvec;
+    result.powercorrelvar = varvec;
+
+    scratchvec(:) = scratchnongauss;
+    result.nongaussdata = scratchvec;
+    result.nongausscount = countvec;
+    result.nongaussvar = varvec;
+
+  end
 
 end
 
