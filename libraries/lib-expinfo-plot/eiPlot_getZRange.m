@@ -8,7 +8,7 @@ function zrange = eiPlot_getZRange( infodata, infofield, method )
 % "infodata" is a data structure with pairwise information as a function of
 %   time and delay, per TIMEWINLAGDATA.txt.
 % "infofield" is the field name within "infodata" that contains data to
-%   get the range of (e.g. 'xcorrsingle', 'mutualavg', etc).
+%   get the range of (e.g. 'xcorrconcatdata', 'mutualavgdata', etc).
 % "method" is 'symm' for symmetrical positive and negative limits, or
 %   'asymm' for separate positive and negative limits. If this parameter is
 %   omitted or empty, it defaults to 'symm'.
@@ -40,7 +40,7 @@ for dstidx = 1:length(infodata.destchans)
   for srcidx = 1:length(infodata.srcchans)
     if validmask(dstidx,srcidx)
 
-      thisslice = infodata.(infofield)(dstidx,srcidx,:,:);
+      thisslice = infodata.(infofield)(dstidx,srcidx,:,:,:);
       thisslice = reshape( thisslice, 1, [] );
 
       maxval = max( maxval, max(thisslice) );

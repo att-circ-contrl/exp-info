@@ -1,8 +1,8 @@
 function plotmeta = eiPlot_getChanTimeLagMetadata( ...
-  infodata, infofield, destswanted, srcswanted, ztype )
+  infodata, infofield, destswanted, srcswanted, trialswanted, ztype )
 
 % function plotmeta = eiPlot_getChanTimeLagMetadata( ...
-%   infodata, infofield, destswanted, srcswanted, ztype )
+%   infodata, infofield, destswanted, srcswanted, trialswanted, ztype )
 %
 % This extracts various common plotting-related metadata from a
 % pairwise shared information structure.
@@ -10,11 +10,14 @@ function plotmeta = eiPlot_getChanTimeLagMetadata( ...
 % "infodata" is a data structure with pairwise shared information as a
 %   function of time and delay, per TIMEWINLAGDATA.txt.
 % "infofield" is the fieldname within "infodata" that contains data to be
-%   plotted (e.g. 'xcorrcancatdata', 'mutualavgdata', etc).
+%   plotted (e.g. 'xcorrconcatdata', 'mutualavgdata', etc).
 % "destswanted" is a cell array containing destination channels to consider,
 %   or {} to use all destination channels.
 % "srcswanted" is a cell array containing source channels to consider, or
 %   {} to use all source channels.
+% "trialswanted" is a vector containing trial numbers (from "trialnums") to
+%   consider, or [] to use all trials. NOTE - This is used to build the trial
+%   mask, but is ignored when computing Z range (all trials are considered).
 % "ztype" is 'symm' or 'asymm', passed as an argument to eiPlot_getZRange().
 %
 % "plotmeta" is a structure with the following fields:
@@ -47,6 +50,9 @@ function plotmeta = eiPlot_getChanTimeLagMetadata( ...
 %   "trialcount" is the number of trials.
 %   "triallabels" is a cell array with filename-safe trial numbers.
 %   "trialtitles" is a cell array with plot-safe trial numbers.
+%
+%   "trialmask" is a boolean vector of the same size as "trialnums" that's
+%     true for desired trials and false otherwise.
 %
 %   "timestep_ms" is the median time increment in "timelist_ms".
 %
@@ -118,12 +124,25 @@ plotmeta.timestep_ms = median(diff(sort( timelist_ms )));
 
 trialnums = infodata.trialnums;
 
-if size(infodata.(infofield)
+if size(infodata.(infofield),3) < length(trialnums)
+  % NOTE - Just give this a normal trial number.
+  % Plotting functions should special-case single-trial vs many-trials.
+  trialnums = 1;
+end
 
 plotmeta.trialnums = trialnums;
 plotmeta.trialcount = length(trialnums);
 plotmeta.triallabels = nlUtil_sprintfCellArray( 'tr%04d', trialnums );
 plotmeta.trialtitles = nlUtil_sprintfCellArray( 'Tr %04d', trialnums );
+
+% Build the trial mask.
+trialmask = true(size(trialnums));
+if ~isempty(trialswanted)
+  % Output is the size of the first argument.
+  trialmask = ismember(trialnums, trialswanted);
+end
+
+plotmeta.trialmask = trialmask;
 
 
 
