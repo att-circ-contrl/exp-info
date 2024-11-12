@@ -1,6 +1,6 @@
-function anparams = eiCalc_getParamsPCorr( want_squared, flags )
+function anparams = eiCalc_getParamsPCorr( replicates, want_squared, flags )
 
-% function anparams = eiCalc_getParamsPCorr( want_squared, flags )
+% function anparams = eiCalc_getParamsPCorr( replicates, want_squared, flags )
 %
 % This creates a configuration structure suitable for use with the
 % helper_analyzePCorr() analysis function.

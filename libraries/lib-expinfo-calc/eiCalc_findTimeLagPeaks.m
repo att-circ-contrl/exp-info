@@ -41,7 +41,7 @@ srccount = length(timelagdata.srcchans);
 timelist_ms = timelagdata.windowlist_ms;
 laglist_ms = timelagdata.delaylist_ms;
 
-trialnums = timewinlagdata.trialnums;
+trialnums = timelagdata.trialnums;
 
 lagcount = length(timelagdata.delaylist_ms);
 wincount = length(timelagdata.windowlist_ms);

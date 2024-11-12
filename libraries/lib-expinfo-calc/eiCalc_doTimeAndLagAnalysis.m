@@ -439,7 +439,7 @@ for widx = 1:wincount
 
           varslice = winvar(:,:,delayidx);
           varslice(thisvalid) = varslice(thisvalid) ...
-            + thisresultslice(thisvalid) .* thisresultcountslice(thisvalid);
+      + thisresultdataslice(thisvalid) .* thisresultcountslice(thisvalid);
           winvar(:,:,delayidx) = varslice;
         end
       end
@@ -457,9 +457,9 @@ for widx = 1:wincount
       scratchcount = winlagdata.([ thisfield 'avgcount' ]);
 
       for delayidx = 1:delaycount
-        scratchavg(:,:,widx,delayidx) = winavg(:,:,delayidx);
-        scratchvar(:,:,widx,delayidx) = winvar(:,:,delayidx);
-        scratchcount(:,:,widx,delayidx) = wincount(:,:,delayidx);
+        scratchavg(:,:,1,widx,delayidx) = winavg(:,:,delayidx);
+        scratchvar(:,:,1,widx,delayidx) = winvar(:,:,delayidx);
+        scratchcount(:,:,1,widx,delayidx) = wincount(:,:,delayidx);
       end
 
       winlagdata.([ thisfield 'avgdata' ]) = scratchavg;

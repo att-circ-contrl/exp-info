@@ -32,6 +32,7 @@ function newdata = eiCalc_smoothTimeLagAverages( ...
 newdata = struct();
 newdata.destchans = olddata.destchans;
 newdata.srcchans = olddata.srcchans;
+newdata.trialnums = olddata.trialnums;
 
 
 %
@@ -66,15 +67,15 @@ windowcount = length(windowlist_ms);
 newdata.delaylist_ms = delaylist_new;
 newdata.windowlist_ms = windowlist_new;
 
+% NOTE - Not adjusting window size!
+newdata.windowsize_ms = olddata.windowsize_ms;
+
 newdelaycount = length(delaylist_new);
 newwindowcount = length(windowlist_new);
 
 
 %
 % Figure out which fields are data/var/count tuples and which aren't.
-
-% FIXME - Blithely assume that all per-trial data will be 5-dimensional.
-% If the user tests with a single time lag, that won't be the case.
 
 scratchfields = datafields;
 datafields = {};
@@ -99,10 +100,15 @@ for fidx = 1:length(scratchfields)
 
     scratch = olddata.(thisfield);
 
-    have_tuple = [ have_tuple false ];
-    trial_counts = [ trial_counts size(scratch, 3) ];
+    % FIXME - Blithely assume that all per-trial data will be 5-dimensional.
+    % If the user tests with a single time lag, that won't be the case.
 
-    datafields = [ datafields { thisfield } ];
+    if 5 == ndims(scratch)
+      have_tuple = [ have_tuple false ];
+      trial_counts = [ trial_counts size(scratch, 3) ];
+
+      datafields = [ datafields { thisfield } ];
+    end
 
   else
     disp([ '### [eiCalc_smoothTimeLagAverages]  Can''t find field "' ...

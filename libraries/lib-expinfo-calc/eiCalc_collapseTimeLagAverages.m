@@ -32,6 +32,8 @@ function [ vstimelist vslaglist ] = eiCalc_collapseTimeLagAverages( ...
 %     sampled, in milliseconds (copied from "lagranges_ms").
 %   "windowlist_ms" is a vector containing timestamps in milliseconds
 %     specifying where the middle of each analysis window is.
+%   "trialnums" is a vector containing trial numbers (arbitrary integer
+%     values used as labels for each trial).
 %   "avg" is a matrix indexed by (destchan, srcchan, trialidx, winidx)
 %     containing the average data values. NOTE - This is just the mean
 %     of "FOOdata", ignoring "count".
@@ -50,6 +52,8 @@ function [ vstimelist vslaglist ] = eiCalc_collapseTimeLagAverages( ...
 %     milliseconds.
 %   "windowrange_ms" is a vector containing the [ min max ] analysis window
 %     locations used, in milliseconds (copied from "timeranges_ms").
+%   "trialnums" is a vector containing trial numbers (arbitrary integer
+%     values used as labels for each trial).
 %   "avg" is a matrix indexed by (destchan, srcchan, trialidx, lagidx)
 %     containing the average data values. NOTE - This is just the mean
 %     of "FOOdata", ignoring "count".
@@ -60,10 +64,10 @@ function [ vstimelist vslaglist ] = eiCalc_collapseTimeLagAverages( ...
 
 % Initialize output.
 
-vstimelist = struct( 'destchans', {}, 'srcchans', {}, ...
+vstimelist = struct( 'destchans', {}, 'srcchans', {}, 'trialnums', {}, ...
   'delayrange_ms', {}, 'windowlist_ms', {}, 'avg', {}, 'dev', {} );
 
-vslaglist = struct( 'destchans', {}, 'srcchans', {}, ...
+vslaglist = struct( 'destchans', {}, 'srcchans', {}, 'trialnums', {}, ...
   'delaylist_ms', {}, 'windowrange_ms', {}, 'avg', {}, 'dev', {} );
 
 
@@ -81,8 +85,9 @@ lagcount = length(laglist);
 winlist = timelagdata.windowlist_ms;
 wincount = length(winlist);
 
+trialnums = timelagdata.trialnums;
 
-%
+
 % Sanity-check the requested field, and extract it.
 
 if ~isfield( timelagdata, datafield )
@@ -98,7 +103,15 @@ end
 
 fielddata = timelagdata.(datafield);
 
+
+% Update trial metadata.
+
 trialcount = size(fielddata, 3);
+
+if 1 == trialcount
+  % Single-trial case; drop the original trial number list.
+  trialnums = 1;
+end
 
 
 
@@ -121,6 +134,7 @@ for rangeidx = 1:length(lagranges_ms)
   thisrec.srcchans = srcchans;
   thisrec.delayrange_ms = [ minlag maxlag ];
   thisrec.windowlist_ms = winlist;
+  thisrec.trialnums = trialnums;
 
   lagmask = (laglist >= minlag) & (laglist <= maxlag);
 
@@ -169,6 +183,7 @@ for rangeidx = 1:length(timeranges_ms)
   thisrec.srcchans = srcchans;
   thisrec.delaylist_ms = laglist;
   thisrec.windowrange_ms = [ minwin maxwin ];
+  thisrec.trialnums = trialnums;
 
   winmask = (winlist >= minwin) & (winlist <= maxwin);
 
