@@ -38,7 +38,8 @@ publication-quality.
 
 ## Sample Code
 
-*FIXME - Sample code NYI.*
+Interim example code is in the `exp-info-examples` GitHub repository.
+
 
 
 *(This is the end of the file.)*
