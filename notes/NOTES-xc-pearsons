@@ -1,0 +1,53 @@
+Matlab's "xcorr" output is equal to Pearson's Correlation Coefficient if
+the "normalize" option is chosen _and_ if input is zero-mean.
+
+
+Pearson's is:
+
+r = E[(x - ux)(y - uy)] / sqrt( E[(x-ux)2] E[(y-uy)2] )
+
+Alternatively:
+
+r = cov(xy) / ( sigma(x) sigma(y) )
+
+
+
+For zero-mean signals, Pearson's is:
+
+r = E[xy] / sqrt( E[x2] E[y2] )
+
+
+
+Matlab computes Rhat as:
+
+Rhat_xy(lag) = X(0) dot Y(lag)
+(I might be swapping sign or variable on the lag.)
+
+Using the "normalize" option, it divides by:
+
+sqrt( Rhat_xx(0) Rhat_yy(0) )
+
+NOTE - Rhat_xx(lag) should be equal to Rhat_xx(0), ignoring end cropping,
+since both arguments to the dot product are shifted by the same amount.
+
+
+
+Setting aside lag, we get:
+
+Rhat_xy = (X dot Y) / sqrt( (X dot X) (Y dot Y) )
+
+For a series:
+
+E[A B] = (1/n) sum_k( a_k b_k ) = (1/n) (A dot B)
+n E[A b] = A dot B
+
+So:
+
+Rhat_xy = n E[X Y] / sqrt( n E[X X] n  E[Y Y] )
+Rhat_xy = n E[XY] / sqrt( n2 E[X2] E[Y2] )
+Rhat_xy = E[XY] / sqrt( E[X2] Y[Y2])
+Rhat_xy = r
+
+
+
+(This is the end of the file.)

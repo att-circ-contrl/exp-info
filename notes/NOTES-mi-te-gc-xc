@@ -1,0 +1,80 @@
+For stationary Gaussian variables, TE and GC are identical, and MI can be
+transformed into Pearson's correlation and vice versa.
+
+
+Key reference (for TE and GC):
+
+"Granger causality and transfer entropy are equivalent for Gaussian
+variables", Barnett et. al. 2009
+
+
+
+Barnett's notation:
+
+E(X) is cov(X).
+E(X,Y) is cov(X,Y) (cross-covariances).
+
+E(X|Y) = E(X) - E(X,Y) E(Y)^-1 E(X,Y)'
+
+A+B (plus in a circle) is concat(A,B). I'll use "c" for that here.
+
+|X| is det(X).
+
+
+For multivariate Gaussian X:
+
+H(X) = (1/2) ln( |E(X)| ) + (1/2) n ln( 2 pi e )
+(where n is the dimensionality of X)
+
+Alternate (equivalent):
+
+H(X) = (1/2) log( 2pi sigma^2 ) + (1/2)  [univariate]
+H(X) = (1/2) n [ 1 + log(2pi) ] + (1/2) log(det(cov(X)))  [multivariate]
+
+..Choice of log and exp base gives the units of H(X). This can be base 2
+for bits or base e for nats.
+
+
+
+See the paper for the derivation of GC and TE being equal.
+It also has a decent description of univariate and multivariate GC.
+
+
+
+Pearson's is:
+
+r = cov(X,Y) / [ sigma_x * sigma_y ]
+
+
+MI is:
+
+I(X,Y) = H(X) - H(X|Y)
+I(X,Y) = H(Y) - H(Y|X)
+I(X,Y) = H(X) + H(Y) - H(X,Y)
+
+
+Using the third one and subbing in H(..):
+
+I(X,Y) = (1/2) ln( |E(X)| ) + (1/2) ln( |E(Y)| ) - (1/2) ln( |E(XcY)| )
+
+...The (1/2) n ln( 2 pi e ) terms cancel; + n_x + n_y - (n_x + n_y).
+
+I(X,Y) = (1/2) ln( |E(X)| * |E(Y)| / |E(XcY)| )
+
+
+...For univariate X and Y:
+
+I(X,Y) = (1/2) ln( sigma2_x * sigma2_y / det[cov(X,Y)] )
+
+I(X,Y) = - (1/2) ln( [ sigma2_x * sigma2_y - (sigma2_xy)^2 ]
+  / [ sigma2_x * sigma2_y ] )
+
+
+...To interconvert I(X,Y) and r:
+
+I(X,Y) = - (1/2) ln( 1 - r^2 )
+r = +/-sqrt( 1 - exp(-2 * I(X,Y)) )
+
+
+
+(This is the end of the file.)
